@@ -1,0 +1,449 @@
+{% extends 'base.html' %}
+{% block title %}Your Results — Weight a Minute{% endblock %}
+{% block head %}
+<style>
+.result-hero {
+    background: radial-gradient(ellipse 80% 50% at 50% -5%, rgba(37,99,235,0.3), transparent),
+                radial-gradient(ellipse 50% 30% at 80% 70%, rgba(6,182,212,0.1), transparent);
+    padding: 60px clamp(16px,4vw,48px) 50px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+}
+.back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--muted); text-decoration: none;
+    font-size: 0.82rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+    margin-bottom: 28px; transition: color 0.2s;
+}
+.back-link:hover { color: var(--accent); }
+.big-num {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(5rem, 15vw, 10rem);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -4px;
+    background: linear-gradient(160deg, #fff 20%, #93c5fd 60%, var(--accent));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.big-label { color: var(--muted); font-size: 0.9rem; letter-spacing: 3px; text-transform: uppercase; margin-top: 6px; }
+.result-sub { color: var(--muted); font-size: 1rem; margin: 16px 0 0; }
+.warn-bar {
+    display: inline-block;
+    background: rgba(239,68,68,0.12);
+    border: 1px solid rgba(239,68,68,0.3);
+    color: #fca5a5;
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    margin-top: 16px;
+    max-width: 560px;
+}
+
+.stats-strip {
+    display: flex; flex-wrap: wrap;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+}
+.stat-item {
+    flex: 1; min-width: 130px;
+    padding: 22px 16px; text-align: center;
+    border-right: 1px solid var(--border);
+}
+.stat-item:last-child { border-right: none; }
+.stat-n { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; color: var(--accent); }
+.stat-l { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+
+.content {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px clamp(16px,4vw,32px) 80px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+@media(max-width: 800px) { .content { grid-template-columns: 1fr; } }
+.full { grid-column: 1 / -1; }
+
+/* BMI meter */
+.bmi-track {
+    height: 10px;
+    border-radius: 99px;
+    background: linear-gradient(90deg, #38bdf8 0%, #10b981 25%, #f59e0b 60%, #ef4444 100%);
+    margin: 14px 0 6px;
+    position: relative;
+}
+.bmi-needle {
+    position: absolute;
+    top: -4px;
+    width: 18px; height: 18px;
+    background: #fff;
+    border-radius: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    border: 2px solid var(--bg);
+}
+
+/* Macro bars */
+.macro { margin-bottom: 16px; }
+.macro-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.macro-name { font-size: 0.85rem; font-weight: 600; }
+.macro-val { font-family: 'Syne', sans-serif; font-size: 1.05rem; font-weight: 800; }
+.bar-track { background: var(--surface2); height: 5px; border-radius: 99px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 99px; }
+
+/* Meal plan */
+.meal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media(max-width: 600px) { .meal-grid { grid-template-columns: 1fr; } }
+.meal-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+}
+.meal-type { font-size: 0.72rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.meal-name { font-size: 0.92rem; font-weight: 600; margin-bottom: 8px; line-height: 1.4; }
+.meal-macros { display: flex; gap: 10px; flex-wrap: wrap; }
+.meal-macro { font-size: 0.75rem; color: var(--muted); background: var(--surface); padding: 3px 8px; border-radius: 5px; }
+
+/* Fat loss grid */
+.fl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fl-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+}
+.fl-item.warn { border-color: rgba(239,68,68,0.3); }
+.fl-item-label { font-size: 0.72rem; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+.fl-item-val { font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 800; }
+.fl-item.warn .fl-item-val { color: #fca5a5; }
+.fl-item-sub { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+/* Alt widget */
+.alt-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.alt-row:last-of-type { border: none; }
+.alt-row-val { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800; }
+.alt-weeks-input {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-family: 'Epilogue', sans-serif; font-size: 1rem;
+    padding: 8px 12px; outline: none; width: 90px; transition: border-color 0.2s;
+}
+.alt-weeks-input:focus { border-color: var(--blue-l); }
+
+/* Chart */
+.chart-wrap { position: relative; height: 260px; }
+
+/* Water & extras */
+.water-rings { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.water-ring {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem;
+    transition: all 0.15s;
+    cursor: pointer;
+}
+.water-ring.filled { background: rgba(6,182,212,0.2); border-color: var(--cyan); }
+
+/* Print button */
+.print-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+}
+.print-btn:hover { border-color: var(--accent); color: var(--accent); }
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="result-hero">
+    <a href="{{ url_for('calculate') }}" class="back-link">← Recalculate</a>
+    <div class="result-sub">To lose <strong style="color:var(--text)">{{ display_loss }}</strong> in <strong style="color:var(--text)">{{ weeks_goal }} weeks</strong>, aim for</div>
+    <div class="big-num">{{ calorie_intake }}</div>
+    <div class="big-label">kilocalories per day</div>
+    {% if calorie_intake <= 600 %}
+    <div><div class="warn-bar">⚠️ 600 kcal is the safe minimum. Consider extending your timeline or reducing your goal.</div></div>
+    {% endif %}
+    <div style="margin-top:20px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap" class="no-print">
+        <button onclick="window.print()" class="print-btn">🖨 Print / Save PDF</button>
+        {% if session.get('user_id') %}
+        <span style="color:var(--green);font-size:0.82rem;font-weight:600;align-self:center">✓ Saved to your history</span>
+        {% else %}
+        <a href="{{ url_for('register') }}" style="color:var(--accent);font-size:0.82rem;font-weight:600;text-decoration:none;align-self:center">Create account to save →</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="stats-strip">
+    <div class="stat-item"><div class="stat-n">{{ bmr }}</div><div class="stat-l">BMR kcal</div></div>
+    <div class="stat-item"><div class="stat-n">{{ tdee }}</div><div class="stat-l">TDEE kcal</div></div>
+    <div class="stat-item"><div class="stat-n">{{ deficit }}</div><div class="stat-l">Daily Deficit</div></div>
+    <div class="stat-item"><div class="stat-n">{{ bmi }}</div><div class="stat-l">BMI · {{ bmi_cat }}</div></div>
+    <div class="stat-item"><div class="stat-n">{{ body_fat }}%</div><div class="stat-l">Est. Body Fat</div></div>
+    <div class="stat-item"><div class="stat-n">{{ water_l }}L</div><div class="stat-l">Water / Day</div></div>
+</div>
+
+<div class="content">
+
+    <!-- Chart -->
+    <div class="card full">
+        <div class="card-title">Deficit Curve — Your TDEE vs Calorie Targets</div>
+        <div class="chart-wrap"><canvas id="mainChart"></canvas></div>
+    </div>
+
+    <!-- BMI & Body Composition -->
+    <div class="card">
+        <div class="card-title">📊 Body Composition</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:4px">
+            <span style="font-size:0.82rem;color:var(--muted)">BMI</span>
+            <span style="font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;color:var(--accent)">{{ bmi }}</span>
+        </div>
+        <div class="bmi-track">
+            <div class="bmi-needle" style="left:{{ [(bmi - 15) / (40 - 15) * 100, 5] | max | round }}%"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--muted);margin-bottom:16px">
+            <span>Underweight</span><span>Healthy</span><span>Overweight</span><span>Obese</span>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <span style="color:var(--muted);font-size:0.88rem">Category</span>
+            <strong style="color:var(--text)">{{ bmi_cat }}</strong>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <span style="color:var(--muted);font-size:0.88rem">Est. Body Fat</span>
+            <strong style="color:var(--text)">{{ body_fat }}%</strong>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:14px;display:flex;justify-content:space-between;align-items:center">
+            <span style="color:var(--muted);font-size:0.88rem">Goal weight: {{ display_weight }}</span>
+            <span style="color:var(--muted);font-size:0.82rem">lose {{ display_loss }}</span>
+        </div>
+        <p style="color:var(--muted);font-size:0.78rem;margin-top:12px;line-height:1.5">BMI uses height &amp; weight only; body fat estimate uses Deurenberg formula. Both are indicative, not diagnostic.</p>
+    </div>
+
+    <!-- Water -->
+    <div class="card">
+        <div class="card-title green">💧 Daily Hydration</div>
+        <div style="text-align:center;margin-bottom:16px">
+            <span style="font-family:'Syne',sans-serif;font-size:3.5rem;font-weight:800;color:#06b6d4">{{ water_l }}</span>
+            <span style="color:var(--muted);font-size:1rem"> litres / day</span>
+        </div>
+        <p style="color:var(--muted);font-size:0.88rem;line-height:1.6;margin-bottom:16px">Based on your body weight × 0.033 L, plus an activity bonus. Click glasses to track today:</p>
+        <div class="water-rings" id="waterRings"></div>
+        <div style="margin-top:10px;font-size:0.82rem;color:var(--muted)" id="waterCount">0 / {{ (water_l / 0.25) | round | int }} glasses (250 ml each)</div>
+        <div style="margin-top:20px;background:var(--surface2);border-radius:10px;padding:14px">
+            <div style="font-size:0.78rem;color:var(--muted);margin-bottom:6px">Tips</div>
+            <ul style="list-style:none;font-size:0.82rem;color:var(--muted);line-height:1.8">
+                <li>→ Drink a glass before every meal</li>
+                <li>→ Add lemon or cucumber if plain water is dull</li>
+                <li>→ Urine should be pale yellow — darker means drink more</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Macros -->
+    <div class="card">
+        <div class="card-title gold">💪 Muscle Building Macros</div>
+        <div style="text-align:center;margin-bottom:20px">
+            <span style="font-family:'Syne',sans-serif;font-size:2.8rem;font-weight:800;color:var(--gold)">{{ muscle_calories }}</span>
+            <span style="color:var(--muted)"> kcal/day</span>
+        </div>
+
+        <div id="macroSliders">
+            <div class="macro">
+                <div class="macro-head">
+                    <span class="macro-name" style="color:#60a5fa">🔵 Protein</span>
+                    <span class="macro-val" id="pVal">{{ protein_grams }}g</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill" id="pBar" style="width:{{ protein_pct }}%;background:#60a5fa"></div></div>
+                <input type="range" id="pSlider" min="10" max="60" value="{{ protein_pct }}" style="margin-top:8px" oninput="updateMacros()"/>
+            </div>
+            <div class="macro">
+                <div class="macro-head">
+                    <span class="macro-name" style="color:#f472b6">🩷 Fats</span>
+                    <span class="macro-val" id="fVal">{{ fats_grams }}g</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill" id="fBar" style="width:25%;background:#f472b6"></div></div>
+                <input type="range" id="fSlider" min="10" max="50" value="25" style="margin-top:8px" oninput="updateMacros()"/>
+            </div>
+            <div class="macro">
+                <div class="macro-head">
+                    <span class="macro-name" style="color:#fbbf24">🟡 Carbs</span>
+                    <span class="macro-val" id="cVal">{{ carbs_grams }}g</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill" id="cBar" style="width:{{ carbs_pct }}%;background:#fbbf24"></div></div>
+                <div style="font-size:0.78rem;color:var(--muted);margin-top:6px">Auto-fills the remainder</div>
+            </div>
+        </div>
+        <p style="color:var(--muted);font-size:0.78rem;margin-top:14px">Drag the sliders to customise your protein/fat split. Carbs fill the rest.</p>
+    </div>
+
+    <!-- Fat Loss Presets -->
+    <div class="card">
+        <div class="card-title">🔥 Fat Loss Presets</div>
+        <p style="color:var(--muted);font-size:0.88rem;margin-bottom:16px">Daily kcal targets by weekly loss rate, based on your TDEE of <strong style="color:var(--text)">{{ tdee }}</strong> kcal.</p>
+        <div class="fl-grid" id="flGrid"></div>
+        <div id="flWarn" style="display:none;margin-top:12px;padding:10px 14px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:#fca5a5;font-size:0.82rem;"></div>
+    </div>
+
+    <!-- Meal Plan -->
+    <div class="card full">
+        <div class="card-title">🥗 Today's Meal Plan
+            <span style="font-size:0.75rem;color:var(--muted);font-weight:400;letter-spacing:0;text-transform:none;margin-left:8px">
+                ({{ goal_type | replace('_', ' ') | title }} — approx {{ total_meal_cals }} kcal total)
+            </span>
+        </div>
+        <div class="meal-grid">
+            {% for meal_type in ['breakfast', 'lunch', 'dinner', 'snack'] %}
+            {% set m = plan[meal_type] %}
+            <div class="meal-item">
+                <div class="meal-type">{{ meal_type }}</div>
+                <div class="meal-name">{{ m.name }}</div>
+                <div class="meal-macros">
+                    <span class="meal-macro">{{ m.cals }} kcal</span>
+                    <span class="meal-macro" style="color:#60a5fa">P {{ m.protein }}g</span>
+                    <span class="meal-macro" style="color:#fbbf24">C {{ m.carbs }}g</span>
+                    <span class="meal-macro" style="color:#f472b6">F {{ m.fats }}g</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <p style="color:var(--muted);font-size:0.8rem;margin-top:14px">Suggestions only. Actual macros depend on brands, cooking methods, and portion sizes. Reload for different suggestions.</p>
+    </div>
+
+    <!-- Adjust Timeline -->
+    <div class="card full">
+        <div class="card-title">🗓️ Adjust Your Timeline</div>
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap">
+            <span style="color:var(--muted);font-size:0.9rem">Weeks to goal:</span>
+            <input type="number" class="alt-weeks-input" id="alt_weeks" min="1" max="104" value="{{ weeks_goal }}"/>
+        </div>
+        <div class="alt-row">
+            <span style="color:var(--muted);font-size:0.9rem">Lose <strong style="color:var(--text)">1 kg</strong></span>
+            <span><span class="alt-row-val" id="c1">{{ calorie_intake_1kg }}</span> <span style="color:var(--muted);font-size:0.82rem">kcal/day</span></span>
+        </div>
+        <div class="alt-row">
+            <span style="color:var(--muted);font-size:0.9rem">Lose <strong style="color:var(--text)">2 kg</strong></span>
+            <span><span class="alt-row-val" id="c2">{{ calorie_intake_2kg }}</span> <span style="color:var(--muted);font-size:0.82rem">kcal/day</span></span>
+        </div>
+        <div class="alt-row">
+            <span style="color:var(--muted);font-size:0.9rem">Lose <strong style="color:var(--text)">5 kg</strong></span>
+            <span><span class="alt-row-val" id="c5">{{ calorie_intake_5kg }}</span> <span style="color:var(--muted);font-size:0.82rem">kcal/day</span></span>
+        </div>
+        <div id="altWarn" style="display:none;margin-top:12px;padding:10px 14px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:#fca5a5;font-size:0.82rem;"></div>
+    </div>
+
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const tdee = {{ tdee }};
+const bmr  = {{ bmr }};
+const muscleCals = {{ muscle_calories }};
+
+// ── Chart ────────────────────────────────────────────────────────────────────
+const rates = [0, 0.075, 0.15, 0.225, 0.30];
+const cals = rates.map(r => Math.round(tdee * (1 - r)));
+const wloss = rates.map(r => +((r / 0.15) * 1).toFixed(2));
+new Chart(document.getElementById('mainChart').getContext('2d'), {
+    type: 'line',
+    data: {
+        labels: ['No Deficit', '7.5%', '15%', '22.5%', '30%'],
+        datasets: [
+            { label: 'Calorie Intake (kcal)', data: cals, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', fill: true, tension: 0.4, pointRadius: 5, borderWidth: 2 },
+            { label: 'Est. Weekly Loss (kg)', data: wloss, borderColor: '#06b6d4', backgroundColor: 'rgba(6,182,212,0.05)', fill: true, tension: 0.4, pointRadius: 5, borderWidth: 2, yAxisID: 'y1' }
+        ]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+            x: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.03)' } },
+            y: { position: 'left', ticks: { color: '#3b82f6' }, grid: { color: 'rgba(255,255,255,0.03)' }, title: { display: true, text: 'kcal/day', color: '#3b82f6', font: {size:11} }, min: Math.min(...cals)*0.9 },
+            y1: { position: 'right', ticks: { color: '#06b6d4' }, grid: { drawOnChartArea: false }, title: { display: true, text: 'kg/week', color: '#06b6d4', font: {size:11} }, min: 0, max: 2.5 }
+        },
+        plugins: { legend: { labels: { color: '#e2e8f0', font: {size:12} } } }
+    }
+});
+
+// ── Macro sliders ─────────────────────────────────────────────────────────────
+function updateMacros() {
+    const pPct = parseInt(document.getElementById('pSlider').value);
+    const fPct = parseInt(document.getElementById('fSlider').value);
+    const maxC = Math.max(0, 100 - pPct - fPct);
+    const pG = Math.round((pPct / 100) * muscleCals / 4);
+    const fG = Math.round((fPct / 100) * muscleCals / 9);
+    const cG = Math.round((maxC / 100) * muscleCals / 4);
+    document.getElementById('pVal').textContent = pG + 'g';
+    document.getElementById('fVal').textContent = fG + 'g';
+    document.getElementById('cVal').textContent = cG + 'g';
+    document.getElementById('pBar').style.width = pPct + '%';
+    document.getElementById('fBar').style.width = fPct + '%';
+    document.getElementById('cBar').style.width = maxC + '%';
+}
+
+// ── Water tracker ─────────────────────────────────────────────────────────────
+const totalGlasses = Math.round({{ water_l }} / 0.25);
+let filled = 0;
+const rings = document.getElementById('waterRings');
+const countEl = document.getElementById('waterCount');
+for (let i = 0; i < totalGlasses; i++) {
+    const d = document.createElement('div');
+    d.className = 'water-ring';
+    d.textContent = '💧';
+    d.title = '250ml glass';
+    d.onclick = () => {
+        const idx = [...rings.children].indexOf(d);
+        if (d.classList.contains('filled')) {
+            for (let j = idx; j < rings.children.length; j++) rings.children[j].classList.remove('filled');
+            filled = idx;
+        } else {
+            for (let j = 0; j <= idx; j++) rings.children[j].classList.add('filled');
+            filled = idx + 1;
+        }
+        countEl.textContent = `${filled} / ${totalGlasses} glasses (250 ml each)`;
+    };
+    rings.appendChild(d);
+}
+
+// ── Fat loss presets ──────────────────────────────────────────────────────────
+const flGrid = document.getElementById('flGrid');
+const flWarn = document.getElementById('flWarn');
+[{l:'Gentle', r:0.25},{l:'Moderate', r:0.50},{l:'Aggressive', r:0.75},{l:'Max', r:1.00}].forEach(p => {
+    const t = Math.max(600, Math.round(tdee - (p.r*7700)/7));
+    const d = document.createElement('div');
+    d.className = 'fl-item' + (t<=600?' warn':'');
+    d.innerHTML = `<div class="fl-item-label">${p.l}</div><div class="fl-item-val">${t}</div><div class="fl-item-sub">${p.r} kg/week</div>`;
+    flGrid.appendChild(d);
+    if (t<=600) { flWarn.style.display='block'; flWarn.textContent='One or more presets hit the 600 kcal floor. Reduce weekly loss or increase your activity level.'; }
+});
+
+// ── Alt timeline ──────────────────────────────────────────────────────────────
+const altWarn = document.getElementById('altWarn');
+function updateAlt() {
+    const w = parseFloat(document.getElementById('alt_weeks').value);
+    if (!w || w < 1) return;
+    const c1 = Math.max(600, Math.round(tdee - 7700/(w*7)));
+    const c2 = Math.max(600, Math.round(tdee - (2*7700)/(w*7)));
+    const c5 = Math.max(600, Math.round(tdee - (5*7700)/(w*7)));
+    document.getElementById('c1').textContent = c1;
+    document.getElementById('c2').textContent = c2;
+    document.getElementById('c5').textContent = c5;
+    altWarn.style.display = [c1,c2,c5].some(v=>v<=600) ? 'block' : 'none';
+    altWarn.textContent = 'One or more targets hit 600 kcal. Extend the timeline for a safer deficit.';
+}
+document.getElementById('alt_weeks').addEventListener('input', updateAlt);
+</script>
+{% endblock %}

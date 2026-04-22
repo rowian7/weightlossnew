@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% block title %}Exercise Calorie Burn — Weight a Minute{% endblock %}
+{% block head %}
+<style>
+.page-hero {
+    background: radial-gradient(ellipse 60% 40% at 70% 0%, rgba(16,185,129,0.15), transparent);
+    padding: 50px clamp(16px,4vw,48px) 40px;
+    border-bottom: 1px solid var(--border);
+}
+.ex-wrap {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 48px clamp(16px,4vw,32px) 80px;
+}
+.ex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 32px; }
+.ex-btn {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    color: var(--text);
+    font-family: 'Epilogue', sans-serif;
+}
+.ex-btn:hover { border-color: var(--blue-l); background: rgba(59,130,246,0.08); }
+.ex-btn.selected { border-color: var(--green); background: rgba(16,185,129,0.1); }
+.ex-icon { font-size: 1.6rem; margin-bottom: 8px; }
+.ex-name { font-size: 0.88rem; font-weight: 600; }
+.ex-met { font-size: 0.75rem; color: var(--muted); margin-top: 3px; }
+
+.calc-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    margin-top: 28px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+}
+@media(max-width:600px) { .calc-panel { grid-template-columns: 1fr; } }
+
+.result-panel {
+    background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(6,182,212,0.06));
+    border: 1px solid rgba(16,185,129,0.2);
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+}
+.burn-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 4rem;
+    font-weight: 800;
+    color: var(--green);
+    line-height: 1;
+    margin-bottom: 4px;
+}
+.burn-label { color: var(--muted); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 2px; }
+.burn-detail { margin-top: 16px; font-size: 0.88rem; color: var(--muted); line-height: 1.6; }
+
+.tip-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.87rem; color: var(--muted); }
+.tip-row:last-child { border: none; }
+.tip-row::before { content: '→'; color: var(--green); flex-shrink: 0; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-hero">
+    <div class="container">
+        <div class="section-title">Exercise Calorie Burn</div>
+        <p class="section-sub">Pick an activity, enter your weight and duration, get your burn estimate instantly.</p>
+    </div>
+</div>
+
+<div class="ex-wrap">
+    <div class="card-title" style="margin-bottom:16px">Select an Exercise</div>
+    <div class="ex-grid" id="exGrid">
+        {% for ex in exercises %}
+        <button class="ex-btn" data-met="{{ ex.met }}" data-name="{{ ex.name }}" onclick="selectEx(this)">
+            <div class="ex-icon">{{ ex.icon }}</div>
+            <div class="ex-name">{{ ex.name }}</div>
+            <div class="ex-met">MET {{ ex.met }}</div>
+        </button>
+        {% endfor %}
+    </div>
+
+    <div class="calc-panel">
+        <div>
+            <div class="field">
+                <label>Your Weight <span class="val" id="w-disp">70 kg</span></label>
+                <input type="range" id="ex-weight" min="30" max="200" step="0.5" value="70" oninput="syncW();calcBurn()"/>
+            </div>
+            <div class="field" style="margin-top:8px">
+                <label>
+                    <span>Unit</span>
+                </label>
+                <div class="pill-group">
+                    <input type="radio" name="exunit" id="eu-kg" value="kg" checked onchange="calcBurn()"/>
+                    <label for="eu-kg">kg</label>
+                    <input type="radio" name="exunit" id="eu-lbs" value="lbs" onchange="calcBurn()"/>
+                    <label for="eu-lbs">lbs</label>
+                </div>
+            </div>
+            <div class="field">
+                <label>Duration <span class="val" id="dur-disp">30 min</span></label>
+                <input type="range" id="ex-dur" min="5" max="180" step="5" value="30" oninput="document.getElementById('dur-disp').textContent=this.value+' min';calcBurn()"/>
+            </div>
+            <div class="field">
+                <label>Selected Exercise</label>
+                <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:0.9rem;font-weight:600" id="ex-name-disp">— Choose from the grid above —</div>
+            </div>
+        </div>
+
+        <div>
+            <div class="result-panel">
+                <div class="burn-num" id="burnNum">—</div>
+                <div class="burn-label">calories burned</div>
+                <div class="burn-detail" id="burnDetail">Select an exercise and adjust the sliders</div>
+            </div>
+
+            <div style="margin-top:20px">
+                <div class="card-title" style="color:var(--green)">Exercise Tips</div>
+                <div class="tip-row">Warm up for 5 minutes at low intensity before pushing hard.</div>
+                <div class="tip-row">Compound lifts (squat, deadlift) burn more than isolated exercises.</div>
+                <div class="tip-row">Heart rate should sit at 60–80% of max for fat burning.</div>
+                <div class="tip-row">Consistency over intensity — 4× moderate beats 1× intense.</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let selectedMet = null;
+let selectedName = '';
+
+function selectEx(btn) {
+    document.querySelectorAll('.ex-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedMet = parseFloat(btn.dataset.met);
+    selectedName = btn.dataset.name;
+    document.getElementById('ex-name-disp').textContent = selectedName;
+    calcBurn();
+}
+
+function syncW() {
+    const v = document.getElementById('ex-weight').value;
+    const unit = document.querySelector('input[name=exunit]:checked').value;
+    document.getElementById('w-disp').textContent = v + ' ' + unit;
+}
+
+function calcBurn() {
+    if (!selectedMet) return;
+    const rawW = parseFloat(document.getElementById('ex-weight').value);
+    const unit = document.querySelector('input[name=exunit]:checked').value;
+    const weightKg = unit === 'lbs' ? rawW * 0.453592 : rawW;
+    const minutes = parseFloat(document.getElementById('ex-dur').value);
+    const calories = Math.round((selectedMet * 3.5 * weightKg / 200) * minutes);
+    document.getElementById('burnNum').textContent = calories;
+    const hrs = Math.floor(minutes/60);
+    const mins = minutes % 60;
+    const durStr = hrs > 0 ? `${hrs}h ${mins}m` : `${minutes} min`;
+    document.getElementById('burnDetail').innerHTML =
+        `<strong style="color:var(--text)">${selectedName}</strong> for ${durStr}<br>` +
+        `at ${rawW} ${unit} body weight<br><br>` +
+        `<span style="color:var(--accent)">~${Math.round(calories/minutes*60)} kcal/hour</span>`;
+}
+
+document.querySelectorAll('input[name=exunit]').forEach(r => r.addEventListener('change', () => { syncW(); calcBurn(); }));
+</script>
+{% endblock %}

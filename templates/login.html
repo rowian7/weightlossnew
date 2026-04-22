@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Log In — Weight a Minute{% endblock %}
+{% block head %}
+<style>
+.auth-wrap {
+    min-height: calc(100vh - var(--nav-h) - 160px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px clamp(16px,4vw,32px);
+    background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(37,99,235,0.15), transparent);
+}
+.auth-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 44px 40px;
+    width: 100%;
+    max-width: 420px;
+}
+.auth-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 6px;
+}
+.auth-sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 32px; }
+.auth-footer { margin-top: 20px; text-align: center; color: var(--muted); font-size: 0.85rem; }
+.auth-footer a { color: var(--accent); text-decoration: none; font-weight: 600; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="auth-title">Welcome back</div>
+        <div class="auth-sub">Log in to view your history and saved calculations.</div>
+
+        <form method="POST" action="{{ url_for('login') }}">
+            <div class="field">
+                <label>Email</label>
+                <input type="email" name="email" required placeholder="you@example.com" autofocus/>
+            </div>
+            <div class="field">
+                <label>Password</label>
+                <input type="password" name="password" required placeholder="••••••••"/>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg" style="margin-top:8px">Log In →</button>
+        </form>
+
+        <div class="auth-footer">
+            Don't have an account? <a href="{{ url_for('register') }}">Sign up free</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

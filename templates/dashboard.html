@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard — Weight a Minute{% endblock %}
+{% block head %}
+<style>
+.dash-hero {
+    background: radial-gradient(ellipse 60% 40% at 20% 0%, rgba(37,99,235,0.2), transparent);
+    padding: 40px clamp(16px,4vw,48px) 32px;
+    border-bottom: 1px solid var(--border);
+}
+.dash-wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px clamp(16px,4vw,32px) 80px;
+}
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+}
+.summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    text-align: center;
+}
+.summary-n { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; color: var(--accent); }
+.summary-l { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1px; margin-top: 6px; }
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+}
+.history-table th {
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+}
+.history-table td {
+    padding: 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+}
+.history-table tr:last-child td { border: none; }
+.history-table tr:hover td { background: var(--surface2); }
+.cal-badge {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--accent);
+}
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+}
+.empty-state .icon { font-size: 3rem; margin-bottom: 16px; }
+
+@media(max-width:600px) {
+    .history-table thead { display: none; }
+    .history-table td { display: block; padding: 6px 14px; border: none; }
+    .history-table tr { display: block; border-bottom: 1px solid var(--border); padding: 10px 0; }
+}
+</style>
+{% endblock %}
+{% block content %}
+<div class="dash-hero">
+    <div class="container">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px">
+            <div class="avatar" style="width:44px;height:44px;font-size:1.1rem">{{ user.username[0].upper() }}</div>
+            <div>
+                <div class="section-title" style="font-size:1.8rem">{{ user.username }}'s Dashboard</div>
+                <div style="color:var(--muted);font-size:0.85rem">Member since {{ user.created_at[:10] }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="dash-wrap">
+
+    {% if history %}
+    <!-- Summary cards -->
+    <div class="summary-grid">
+        <div class="summary-card">
+            <div class="summary-n">{{ history | length }}</div>
+            <div class="summary-l">Calculations saved</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-n">{{ history[0].calorie_intake }}</div>
+            <div class="summary-l">Latest target (kcal)</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-n">{{ history[0].tdee | round | int }}</div>
+            <div class="summary-l">Latest TDEE</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-n">{{ history[0].weight_loss_goal_kg | round(1) }} kg</div>
+            <div class="summary-l">Latest goal</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-n">{{ history[0].weeks_goal }}w</div>
+            <div class="summary-l">Latest timeframe</div>
+        </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+        <div class="card-title" style="margin:0">Calculation History</div>
+        <a href="{{ url_for('calculate') }}" class="btn btn-primary" style="padding:10px 20px;font-size:0.85rem">New Calculation</a>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden">
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Target</th>
+                    <th>TDEE</th>
+                    <th>BMR</th>
+                    <th>Weight</th>
+                    <th>Goal</th>
+                    <th>Weeks</th>
+                    <th>Units</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for h in history %}
+                <tr>
+                    <td style="color:var(--muted)">{{ h.created_at[:10] }}</td>
+                    <td><span class="cal-badge">{{ h.calorie_intake }}</span> <span style="color:var(--muted);font-size:0.78rem">kcal</span></td>
+                    <td>{{ h.tdee | round | int }} kcal</td>
+                    <td>{{ h.bmr | round | int }} kcal</td>
+                    <td>{{ h.weight_kg | round(1) }} kg</td>
+                    <td>{{ h.weight_loss_goal_kg | round(1) }} kg</td>
+                    <td>{{ h.weeks_goal }}w</td>
+                    <td><span style="font-size:0.75rem;background:var(--surface2);padding:3px 8px;border-radius:4px;color:var(--muted)">{{ h.unit_system }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% else %}
+    <div class="card">
+        <div class="empty-state">
+            <div class="icon">📊</div>
+            <div class="section-title" style="font-size:1.5rem;margin-bottom:10px">No calculations yet</div>
+            <p class="section-sub" style="margin-bottom:24px">Run your first calculation to start building your history.</p>
+            <a href="{{ url_for('calculate') }}" class="btn btn-primary">Calculate My Plan →</a>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

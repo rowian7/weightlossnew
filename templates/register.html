@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}Create Account — Weight a Minute{% endblock %}
+{% block head %}
+<style>
+.auth-wrap {
+    min-height: calc(100vh - var(--nav-h) - 160px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px clamp(16px,4vw,32px);
+    background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(37,99,235,0.15), transparent);
+}
+.auth-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 44px 40px;
+    width: 100%;
+    max-width: 420px;
+}
+.auth-title { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; margin-bottom: 6px; }
+.auth-sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 32px; }
+.perk { display: flex; gap: 10px; align-items: flex-start; font-size: 0.85rem; color: var(--muted); margin-bottom: 8px; }
+.perk::before { content: '✓'; color: var(--green); font-weight: 700; flex-shrink: 0; }
+.auth-footer { margin-top: 20px; text-align: center; color: var(--muted); font-size: 0.85rem; }
+.auth-footer a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="auth-title">Create your account</div>
+        <div class="auth-sub">Free forever. No credit card needed.</div>
+
+        <div class="perk">Save every calculation to your history</div>
+        <div class="perk">Track how your targets change over time</div>
+        <div class="perk">Access your data from any device</div>
+
+        <hr class="divider"/>
+
+        <form method="POST" action="{{ url_for('register') }}">
+            <div class="field">
+                <label>Username</label>
+                <input type="text" name="username" required placeholder="e.g. fitjane" autofocus minlength="2" maxlength="30"/>
+            </div>
+            <div class="field">
+                <label>Email</label>
+                <input type="email" name="email" required placeholder="you@example.com"/>
+            </div>
+            <div class="field">
+                <label>Password</label>
+                <input type="password" name="password" required placeholder="At least 6 characters" minlength="6"/>
+                <div class="hint">Minimum 6 characters</div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg" style="margin-top:8px">Create Free Account →</button>
+        </form>
+
+        <div class="auth-footer">
+            Already have an account? <a href="{{ url_for('login') }}">Log in</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

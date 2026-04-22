@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+{% block title %}Calculator — Weight a Minute{% endblock %}
+{% block head %}
+<style>
+.calc-hero {
+    background: radial-gradient(ellipse 70% 40% at 30% 0%, rgba(37,99,235,0.2), transparent);
+    padding: 50px clamp(16px,4vw,48px) 40px;
+    border-bottom: 1px solid var(--border);
+}
+.page-wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 48px clamp(16px,4vw,32px) 80px;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 28px;
+    align-items: start;
+}
+@media(max-width: 860px) { .page-wrap { grid-template-columns: 1fr; } }
+
+.unit-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 30px;
+}
+.unit-toggle {
+    display: flex;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 3px;
+}
+.unit-toggle button {
+    padding: 8px 22px;
+    border: none;
+    border-radius: 999px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s;
+    background: transparent;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+}
+.unit-toggle button.active { background: var(--blue); color: #fff; }
+
+.form-section { margin-bottom: 8px; }
+.form-section-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.form-section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+}
+
+.sidebar { position: sticky; top: calc(var(--nav-h) + 20px); }
+
+.fact-card {
+    background: linear-gradient(135deg, rgba(37,99,235,0.12), rgba(6,182,212,0.05));
+    border: 1px solid rgba(56,189,248,0.15);
+    border-radius: var(--radius);
+    padding: 22px;
+    margin-bottom: 16px;
+}
+.fact-card h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+}
+.fact-card p { color: var(--text); font-size: 0.9rem; line-height: 1.6; }
+
+.why-list { list-style: none; }
+.why-list li {
+    display: flex;
+    gap: 10px;
+    font-size: 0.87rem;
+    color: var(--muted);
+    line-height: 1.5;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+}
+.why-list li:last-child { border: none; }
+.why-list li::before { content: '→'; color: var(--blue-xl); flex-shrink: 0; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="calc-hero">
+    <div class="container">
+        <div class="section-title">Get Your Plan</div>
+        <p class="section-sub">Fill in your details and we'll calculate your personalised daily calorie target, macros, and more.</p>
+    </div>
+</div>
+
+<form method="POST" action="{{ url_for('calculate') }}" id="calcForm">
+<input type="hidden" name="unit_system" id="unit_system_input" value="metric"/>
+<div class="page-wrap">
+
+    <div>
+        <div class="unit-row">
+            <span style="font-size:0.82rem;color:var(--muted);font-weight:600">Units:</span>
+            <div class="unit-toggle">
+                <button type="button" id="btn-metric" class="active" onclick="setUnit('metric')">kg / cm</button>
+                <button type="button" id="btn-imperial" onclick="setUnit('imperial')">lbs / ft·in</button>
+            </div>
+        </div>
+
+        <!-- Profile -->
+        <div class="card" style="margin-bottom:20px">
+            <div class="form-section-label">Your Profile</div>
+
+            <div class="row2">
+                <div class="field">
+                    <label>Age <span class="val" id="age-disp">28 yrs</span></label>
+                    <input type="number" name="age" id="age" min="10" max="100" value="28" required
+                        oninput="document.getElementById('age-disp').textContent=this.value+' yrs'"/>
+                </div>
+                <div class="field">
+                    <label>Gender</label>
+                    <div class="pill-group" style="margin-top:4px">
+                        <input type="radio" name="gender" id="gm" value="male" checked/>
+                        <label for="gm">Male</label>
+                        <input type="radio" name="gender" id="gf" value="female"/>
+                        <label for="gf">Female</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metric -->
+            <div id="metric-fields">
+                <div class="field">
+                    <label>Weight <span class="val" id="wm-disp">70 kg</span></label>
+                    <input type="range" id="weight_kg" name="weight_kg" min="30" max="200" step="0.5" value="70"
+                        oninput="document.getElementById('wm-disp').textContent=this.value+' kg'"/>
+                </div>
+                <div class="field">
+                    <label>Height <span class="val" id="hm-disp">170 cm</span></label>
+                    <input type="range" id="height_cm" name="height_cm" min="100" max="220" step="1" value="170"
+                        oninput="document.getElementById('hm-disp').textContent=this.value+' cm'"/>
+                </div>
+            </div>
+
+            <!-- Imperial -->
+            <div id="imperial-fields" style="display:none">
+                <div class="field">
+                    <label>Weight <span class="val" id="wi-disp">154 lbs</span></label>
+                    <input type="range" id="weight_lbs" name="weight_lbs" min="66" max="440" step="1" value="154"
+                        oninput="document.getElementById('wi-disp').textContent=this.value+' lbs'"/>
+                </div>
+                <div class="row2">
+                    <div class="field">
+                        <label>Feet <span class="val" id="ft-disp">5</span></label>
+                        <input type="range" id="height_ft" name="height_ft" min="3" max="7" step="1" value="5"
+                            oninput="syncImpH()"/>
+                    </div>
+                    <div class="field">
+                        <label>Inches <span class="val" id="in-disp">7</span></label>
+                        <input type="range" id="height_in" name="height_in" min="0" max="11" step="1" value="7"
+                            oninput="syncImpH()"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field">
+                <label>Activity Level</label>
+                <select name="activity_level" required>
+                    <option value="1.2">Sedentary — desk job, little exercise</option>
+                    <option value="1.375">Lightly active — 1–3 workouts/week</option>
+                    <option value="1.55" selected>Moderately active — 3–5 workouts/week</option>
+                    <option value="1.725">Very active — 6–7 workouts/week</option>
+                    <option value="1.9">Extra active — physical job + training</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Goal -->
+        <div class="card" style="margin-bottom:20px">
+            <div class="form-section-label">Your Goal</div>
+            <div class="row2">
+                <div class="field" id="goal-kg-wrap">
+                    <label>Target loss (kg) <span class="val" id="goal-kg-disp">5 kg</span></label>
+                    <input type="number" id="goal_kg" name="weight_loss_goal_kg" min="0.1" step="0.1" value="5" required
+                        oninput="document.getElementById('goal-kg-disp').textContent=this.value+' kg'"/>
+                </div>
+                <div class="field" id="goal-lbs-wrap" style="display:none">
+                    <label>Target loss (lbs) <span class="val" id="goal-lbs-disp">11 lbs</span></label>
+                    <input type="number" id="goal_lbs" name="weight_loss_goal_lbs" min="0.5" step="0.5" value="11"
+                        oninput="document.getElementById('goal-lbs-disp').textContent=this.value+' lbs'"/>
+                </div>
+                <div class="field">
+                    <label>Weeks</label>
+                    <input type="number" name="weeks_goal" min="1" max="104" value="12" required/>
+                    <div class="hint">weeks to reach your goal</div>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg" style="font-size:1.05rem;padding:18px">
+            Calculate My Plan →
+        </button>
+        {% if not session.get('user_id') %}
+        <p class="hint" style="text-align:center;margin-top:12px">
+            <a href="{{ url_for('register') }}" style="color:var(--accent);text-decoration:none">Create a free account</a> to save your results and track progress.
+        </p>
+        {% endif %}
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="fact-card">
+            <h3>💡 Did You Know?</h3>
+            <p>{{ fact }}</p>
+        </div>
+        <div class="card">
+            <div class="card-title">Why it matters</div>
+            <ul class="why-list">
+                <li>Even a 5–10% body weight loss cuts heart disease and diabetes risk significantly.</li>
+                <li>Slow, steady loss (0.5–1 kg/week) preserves muscle and sticks long-term.</li>
+                <li>Muscle burns 3× more calories at rest than fat — strength training matters.</li>
+                <li>Sleep and stress are as important as diet and exercise for lasting change.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+</form>
+
+{% endblock %}
+{% block scripts %}
+<script>
+function syncImpH() {
+    document.getElementById('ft-disp').textContent = document.getElementById('height_ft').value;
+    document.getElementById('in-disp').textContent = document.getElementById('height_in').value;
+}
+function setUnit(u) {
+    document.getElementById('unit_system_input').value = u;
+    const imp = u === 'imperial';
+    document.getElementById('metric-fields').style.display = imp ? 'none' : 'block';
+    document.getElementById('imperial-fields').style.display = imp ? 'block' : 'none';
+    document.getElementById('goal-kg-wrap').style.display = imp ? 'none' : 'block';
+    document.getElementById('goal-lbs-wrap').style.display = imp ? 'block' : 'none';
+    document.getElementById('goal_kg').required = !imp;
+    document.getElementById('goal_lbs').required = imp;
+    document.getElementById('btn-metric').classList.toggle('active', !imp);
+    document.getElementById('btn-imperial').classList.toggle('active', imp);
+}
+document.getElementById('calcForm').addEventListener('submit', () => {
+    const imp = document.getElementById('unit_system_input').value === 'imperial';
+    if (imp) {
+        document.getElementById('weight_kg').disabled = true;
+        document.getElementById('height_cm').disabled = true;
+        document.getElementById('goal_kg').disabled = true;
+    } else {
+        document.getElementById('weight_lbs').disabled = true;
+        document.getElementById('height_ft').disabled = true;
+        document.getElementById('height_in').disabled = true;
+        document.getElementById('goal_lbs').disabled = true;
+    }
+});
+</script>
+{% endblock %}
