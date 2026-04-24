@@ -19,7 +19,7 @@ else:
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'wam-dev-key-change-in-prod-2024')
-app.config['SITE_OWNER'] = 'Your Name'  # ← Change this to your name!
+app.config['SITE_OWNER'] = 'Mena x Rowian'  # ← Change this to your name!
 
 DB = os.path.join(os.path.dirname(__file__), 'instance', 'wam.db')
 
