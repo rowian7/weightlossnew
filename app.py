@@ -1,8 +1,21 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
-import sqlite3, hashlib, os, random, json
+import hashlib, os, random, json
 from datetime import datetime, timedelta
 from functools import wraps
 import math
+
+# Support both PostgreSQL (Render) and SQLite (local)
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL:
+    import psycopg2
+    import psycopg2.extras
+    USE_PG = True
+    # Render gives postgres:// but psycopg2 needs postgresql://
+    if DATABASE_URL.startswith('postgres://'):
+        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+else:
+    import sqlite3
+    USE_PG = False
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'wam-dev-key-change-in-prod-2024')
@@ -117,14 +130,71 @@ EXERCISES = [
 
 # ── DB helpers ────────────────────────────────────────────────────────────────
 def get_db():
-    conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
-    return conn
+    if USE_PG:
+        conn = psycopg2.connect(DATABASE_URL)
+        conn.autocommit = False
+        return conn
+    else:
+        conn = sqlite3.connect(DB)
+        conn.row_factory = sqlite3.Row
+        return conn
+
+def db_execute(conn, sql, params=()):
+    """Run a query and return cursor — works for both PG and SQLite."""
+    # Convert ? placeholders to %s for PostgreSQL
+    if USE_PG:
+        sql = sql.replace('?', '%s')
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    else:
+        cur = conn.cursor()
+    cur.execute(sql, params)
+    return cur
+
+def fetchone(cur):
+    row = cur.fetchone()
+    if row is None: return None
+    return dict(row)
+
+def fetchall(cur):
+    return [dict(r) for r in cur.fetchall()]
 
 def init_db():
-    os.makedirs(os.path.dirname(DB), exist_ok=True)
-    with get_db() as db:
-        db.executescript("""
+    if USE_PG:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username TEXT UNIQUE NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS calculations (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id),
+                created_at TIMESTAMP DEFAULT NOW(),
+                age INTEGER,
+                weight_kg REAL,
+                height_cm REAL,
+                gender TEXT,
+                activity_level REAL,
+                weight_loss_goal_kg REAL,
+                weeks_goal INTEGER,
+                bmr REAL,
+                tdee REAL,
+                calorie_intake INTEGER,
+                unit_system TEXT DEFAULT 'metric'
+            )
+        """)
+        conn.commit()
+        conn.close()
+    else:
+        os.makedirs(os.path.dirname(DB), exist_ok=True)
+        conn = get_db()
+        conn.executescript("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
@@ -150,6 +220,7 @@ def init_db():
             FOREIGN KEY(user_id) REFERENCES users(id)
         );
         """)
+        conn.commit()
 
 def hash_pw(pw): return hashlib.sha256(pw.encode()).hexdigest()
 
@@ -164,8 +235,12 @@ def login_required(f):
 
 def current_user():
     if 'user_id' not in session: return None
-    with get_db() as db:
-        return db.execute('SELECT * FROM users WHERE id=?', (session['user_id'],)).fetchone()
+    conn = get_db()
+    try:
+        cur = db_execute(conn, 'SELECT * FROM users WHERE id=?', (session['user_id'],))
+        return fetchone(cur)
+    finally:
+        conn.close()
 
 # ── Calculation helpers ───────────────────────────────────────────────────────
 def calc_bmr(age, weight_kg, height_cm, gender):
@@ -220,11 +295,12 @@ def index():
     fact = random.choice(HEALTH_FACTS)
     history = []
     if user:
-        with get_db() as db:
-            history = db.execute(
-                'SELECT * FROM calculations WHERE user_id=? ORDER BY created_at DESC LIMIT 3',
-                (user['id'],)
-            ).fetchall()
+        conn = get_db()
+        try:
+            cur = db_execute(conn, 'SELECT * FROM calculations WHERE user_id=? ORDER BY created_at DESC LIMIT 3', (user['id'],))
+            history = fetchall(cur)
+        finally:
+            conn.close()
     return render_template('index.html', user=user, fact=fact, history=history)
 
 @app.route('/calculate', methods=['GET', 'POST'])
@@ -265,15 +341,18 @@ def calculate():
         total_meal_cals = sum(plan[m]['cals'] for m in plan)
 
         if user:
-            with get_db() as db:
-                db.execute("""
+            conn = get_db()
+            try:
+                db_execute(conn, """
                     INSERT INTO calculations
                     (user_id,age,weight_kg,height_cm,gender,activity_level,weight_loss_goal_kg,
                      weeks_goal,bmr,tdee,calorie_intake,unit_system)
                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
                 """, (user['id'], age, weight_kg, height_cm, gender, activity_level,
                       wl_kg, weeks_goal, bmr, tdee, calorie_intake, unit_system))
-                db.commit()
+                conn.commit()
+            finally:
+                conn.close()
 
         return render_template('result.html',
             user=user,
@@ -318,11 +397,12 @@ def exercise():
 @login_required
 def dashboard():
     user = current_user()
-    with get_db() as db:
-        history = db.execute(
-            'SELECT * FROM calculations WHERE user_id=? ORDER BY created_at DESC LIMIT 20',
-            (user['id'],)
-        ).fetchall()
+    conn = get_db()
+    try:
+        cur = db_execute(conn, 'SELECT * FROM calculations WHERE user_id=? ORDER BY created_at DESC LIMIT 20', (user['id'],))
+        history = fetchall(cur)
+    finally:
+        conn.close()
     return render_template('dashboard.html', user=user, history=history)
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -336,16 +416,20 @@ def register():
             flash('Password must be at least 6 characters.', 'error')
             return render_template('register.html')
         try:
-            with get_db() as db:
-                db.execute('INSERT INTO users (username, email, password) VALUES (?,?,?)',
+            conn = get_db()
+            try:
+                db_execute(conn, 'INSERT INTO users (username, email, password) VALUES (?,?,?)',
                            (username, email, hash_pw(pw)))
-                db.commit()
-                user = db.execute('SELECT * FROM users WHERE email=?', (email,)).fetchone()
+                conn.commit()
+                cur = db_execute(conn, 'SELECT * FROM users WHERE email=?', (email,))
+                user = fetchone(cur)
                 session['user_id'] = user['id']
                 session['username'] = user['username']
+            finally:
+                conn.close()
             flash(f'Welcome, {username}! Your account is ready.', 'success')
             return redirect(url_for('calculate'))
-        except sqlite3.IntegrityError:
+        except Exception:
             flash('That username or email is already taken.', 'error')
     return render_template('register.html')
 
@@ -355,9 +439,12 @@ def login():
     if request.method == 'POST':
         email = request.form['email'].strip().lower()
         pw = request.form['password']
-        with get_db() as db:
-            user = db.execute('SELECT * FROM users WHERE email=? AND password=?',
-                              (email, hash_pw(pw))).fetchone()
+        conn = get_db()
+        try:
+            cur = db_execute(conn, 'SELECT * FROM users WHERE email=? AND password=?', (email, hash_pw(pw)))
+            user = fetchone(cur)
+        finally:
+            conn.close()
         if user:
             session['user_id'] = user['id']
             session['username'] = user['username']
