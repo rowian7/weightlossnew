@@ -2,58 +2,64 @@
 {% block title %}Create Account — Weight a Minute{% endblock %}
 {% block head %}
 <style>
-.auth-wrap {
-    min-height: calc(100vh - var(--nav-h) - 160px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 60px clamp(16px,4vw,32px);
-    background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(37,99,235,0.15), transparent);
+.auth-page {
+    min-height: calc(100vh - var(--nav) - 120px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px 16px;
 }
-.auth-card {
-    background: var(--surface);
+.auth-box {
+    width: 100%; max-width: 420px;
+    background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 18px;
-    padding: 44px 40px;
-    width: 100%;
-    max-width: 420px;
+    border-radius: 14px;
+    padding: 36px 32px;
 }
-.auth-title { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; margin-bottom: 6px; }
-.auth-sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 32px; }
-.perk { display: flex; gap: 10px; align-items: flex-start; font-size: 0.85rem; color: var(--muted); margin-bottom: 8px; }
-.perk::before { content: '✓'; color: var(--green); font-weight: 700; flex-shrink: 0; }
-.auth-footer { margin-top: 20px; text-align: center; color: var(--muted); font-size: 0.85rem; }
-.auth-footer a { color: var(--accent); text-decoration: none; font-weight: 600; }
-.divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+@media(max-width:480px) { .auth-box { padding: 24px 18px; border-radius: 12px; } }
+.auth-title { font-family: 'Fraunces', serif; font-size: 1.8rem; font-weight: 700; margin-bottom: 4px; }
+.auth-sub { color: var(--soft); font-size: 0.9rem; margin-bottom: 28px; line-height: 1.5; }
+.perk { display: flex; align-items: flex-start; gap: 10px; font-size: 0.87rem; color: var(--soft); margin-bottom: 8px; }
+.perk::before { content: '✓'; color: var(--green); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+.divider { height: 1px; background: var(--border); margin: 22px 0; }
+.field-label-plain { font-size: 0.83rem; font-weight: 600; color: var(--soft); display: block; margin-bottom: 6px; }
+.auth-footer { text-align: center; color: var(--dim); font-size: 0.85rem; margin-top: 18px; }
+.auth-footer a { color: var(--mid); text-decoration: none; font-weight: 600; }
 </style>
 {% endblock %}
 {% block content %}
-<div class="auth-wrap">
-    <div class="auth-card">
-        <div class="auth-title">Create your account</div>
-        <div class="auth-sub">Free forever. No credit card needed.</div>
+<div class="auth-page">
+    <div class="auth-box">
+        <div class="auth-title">Create account</div>
+        <div class="auth-sub">Free forever. Save your calculations and track progress.</div>
 
-        <div class="perk">Save every calculation to your history</div>
+        <div class="perk">Save every calculation automatically</div>
         <div class="perk">Track how your targets change over time</div>
-        <div class="perk">Access your data from any device</div>
+        <div class="perk">Access from any device</div>
 
-        <hr class="divider"/>
+        <div class="divider"></div>
 
-        <form method="POST" action="{{ url_for('register') }}">
+        <form method="POST" action="{{ url_for('register') }}" novalidate>
             <div class="field">
-                <label>Username</label>
-                <input type="text" name="username" required placeholder="e.g. fitjane" autofocus minlength="2" maxlength="30"/>
+                <label class="field-label-plain" for="username">Username</label>
+                <input type="text" id="username" name="username" required
+                    placeholder="e.g. fitjohn" minlength="2" maxlength="30"
+                    autocomplete="username" autocapitalize="none" spellcheck="false"/>
             </div>
             <div class="field">
-                <label>Email</label>
-                <input type="email" name="email" required placeholder="you@example.com"/>
+                <label class="field-label-plain" for="email">Email address</label>
+                <input type="email" id="email" name="email" required
+                    placeholder="you@example.com"
+                    autocomplete="email" inputmode="email"/>
             </div>
             <div class="field">
-                <label>Password</label>
-                <input type="password" name="password" required placeholder="At least 6 characters" minlength="6"/>
+                <label class="field-label-plain" for="password">Password</label>
+                <input type="password" id="password" name="password" required
+                    placeholder="At least 6 characters" minlength="6"
+                    autocomplete="new-password"/>
                 <div class="hint">Minimum 6 characters</div>
             </div>
-            <button type="submit" class="btn btn-primary btn-lg" style="margin-top:8px">Create Free Account →</button>
+            <button type="submit" class="btn btn-primary btn-full" style="margin-top:6px">
+                Create account →
+            </button>
         </form>
 
         <div class="auth-footer">

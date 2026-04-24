@@ -2,207 +2,156 @@
 {% block title %}Weight a Minute — Free Calorie & Fitness Calculator{% endblock %}
 {% block head %}
 <style>
-    .hero {
-        background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(37,99,235,0.25), transparent),
-                    radial-gradient(ellipse 60% 40% at 80% 60%, rgba(6,182,212,0.08), transparent);
-        padding: clamp(60px, 10vw, 120px) clamp(16px,4vw,48px) clamp(60px, 8vw, 100px);
-        text-align: center;
-        border-bottom: 1px solid var(--border);
-        position: relative;
-        overflow: hidden;
-    }
-    .hero::before {
-        content: '';
-        position: absolute; inset: 0;
-        background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2338bdf8' fill-opacity='0.03'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-        pointer-events: none;
-    }
-    .hero-eyebrow {
-        display: inline-block;
-        background: rgba(56,189,248,0.1);
-        border: 1px solid rgba(56,189,248,0.2);
-        color: var(--accent);
-        font-size: 0.75rem;
-        font-weight: 600;
-        letter-spacing: 3px;
-        text-transform: uppercase;
-        padding: 6px 18px;
-        border-radius: 999px;
-        margin-bottom: 24px;
-    }
-    .hero h1 {
-        font-family: 'Syne', sans-serif;
-        font-size: clamp(3rem, 8vw, 6.5rem);
-        font-weight: 800;
-        letter-spacing: -2px;
-        line-height: 1.0;
-        background: linear-gradient(160deg, #fff 20%, #93c5fd 55%, var(--accent) 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        margin-bottom: 20px;
-    }
-    .hero p {
-        color: var(--muted);
-        font-size: clamp(1rem, 2vw, 1.2rem);
-        max-width: 520px;
-        margin: 0 auto 36px;
-        line-height: 1.7;
-        font-weight: 300;
-    }
-    .hero-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.hero {
+    padding: clamp(48px,8vw,100px) 16px clamp(40px,6vw,80px);
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+}
+.hero-eyebrow {
+    display: inline-block;
+    background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.25);
+    color: var(--mid); font-size: 0.75rem; font-weight: 700;
+    letter-spacing: 2.5px; text-transform: uppercase;
+    padding: 5px 16px; border-radius: 999px; margin-bottom: 20px;
+}
+.hero h1 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(2.8rem, 9vw, 6rem);
+    font-weight: 700; line-height: 1.05; letter-spacing: -1px;
+    margin-bottom: 18px;
+}
+.hero h1 em { color: var(--mid); font-style: italic; }
+.hero p { color: var(--soft); font-size: clamp(0.95rem, 2.5vw, 1.1rem); max-width: 480px; margin: 0 auto 32px; line-height: 1.7; }
+.hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.hero-btns .btn { padding: 13px 28px; font-size: 1rem; }
 
-    .features {
-        padding: clamp(60px,8vw,100px) clamp(16px,4vw,32px);
-        max-width: 1100px;
-        margin: 0 auto;
-    }
-    .features-header { text-align: center; margin-bottom: 60px; }
-    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-    .feature-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 28px;
-        transition: border-color 0.2s, transform 0.2s;
-    }
-    .feature-card:hover { border-color: rgba(56,189,248,0.3); transform: translateY(-2px); }
-    .feature-icon { font-size: 2rem; margin-bottom: 14px; }
-    .feature-card h3 { font-family: 'Syne', sans-serif; font-size: 1.05rem; font-weight: 700; margin-bottom: 8px; }
-    .feature-card p { color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+.fact-bar {
+    border-bottom: 1px solid var(--border);
+    background: var(--card);
+    padding: 18px 16px; text-align: center;
+}
+.fact-bar span { color: var(--dim); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 6px; }
+.fact-bar p { color: var(--soft); font-size: 0.92rem; max-width: 640px; margin: 0 auto; line-height: 1.6; font-style: italic; }
 
-    .fact-banner {
-        background: linear-gradient(135deg, rgba(37,99,235,0.15), rgba(6,182,212,0.08));
-        border-top: 1px solid var(--border);
-        border-bottom: 1px solid var(--border);
-        padding: 28px clamp(16px,4vw,48px);
-        text-align: center;
-    }
-    .fact-banner p { color: var(--muted); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
-    .fact-banner blockquote { font-size: clamp(1rem, 2vw, 1.15rem); color: var(--text); font-weight: 300; max-width: 700px; margin: 0 auto; line-height: 1.7; }
+.features { padding: clamp(48px,6vw,80px) 16px; max-width: 1080px; margin: 0 auto; }
+.features-title { font-family: 'Fraunces', serif; font-size: clamp(1.4rem,3vw,2rem); font-weight: 700; text-align: center; margin-bottom: 36px; }
+.feat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.feat-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px;
+    transition: border-color 0.2s;
+}
+.feat-card:hover { border-color: rgba(59,130,246,0.4); }
+.feat-icon { font-size: 1.5rem; margin-bottom: 10px; }
+.feat-card h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 6px; }
+.feat-card p { color: var(--soft); font-size: 0.85rem; line-height: 1.6; }
 
-    .history-section {
-        padding: 60px clamp(16px,4vw,32px);
-        max-width: 1100px;
-        margin: 0 auto;
-    }
-    .history-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 24px; }
-    .history-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 20px;
-        display: flex;
-        align-items: center;
-        gap: 16px;
-    }
-    .history-cal {
-        font-family: 'Syne', sans-serif;
-        font-size: 2rem;
-        font-weight: 800;
-        color: var(--accent);
-        flex-shrink: 0;
-    }
-    .history-meta { font-size: 0.82rem; color: var(--muted); line-height: 1.6; }
+.cta-section {
+    text-align: center;
+    padding: clamp(48px,6vw,80px) 16px;
+    border-top: 1px solid var(--border);
+    background: var(--bg2);
+}
+.cta-section h2 { font-family: 'Fraunces', serif; font-size: clamp(1.4rem,3vw,2rem); font-weight: 700; margin-bottom: 10px; }
+.cta-section p { color: var(--soft); margin-bottom: 24px; max-width: 400px; margin-left: auto; margin-right: auto; font-size: 0.95rem; }
+
+.history-section { padding: 48px 16px; max-width: 1080px; margin: 0 auto; }
+.hist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-top: 20px; }
+.hist-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; display: flex; align-items: center; gap: 14px;
+}
+.hist-num { font-family: 'Fraunces', serif; font-size: 1.8rem; font-weight: 700; color: var(--blue-l); flex-shrink: 0; }
+.hist-meta { font-size: 0.83rem; color: var(--soft); line-height: 1.6; }
 </style>
 {% endblock %}
 {% block content %}
+
 <div class="hero">
     <div class="hero-eyebrow">Free Nutrition Calculator</div>
-    <h1>Weight<br>a Minute</h1>
-    <p>Your personalised calorie target, macros, meal plan, and exercise burn — all in one place.</p>
-    <div class="hero-actions">
-        <a href="{{ url_for('calculate') }}" class="btn btn-primary btn-lg" style="width:auto">Calculate My Plan →</a>
+    <h1>Weight<br><em>a</em> Minute</h1>
+    <p>Personalised calorie targets, macros, meal plans, and exercise tracking — all in one place, completely free.</p>
+    <div class="hero-btns">
+        <a href="{{ url_for('calculate') }}" class="btn btn-primary">Get my plan →</a>
         {% if not session.get('user_id') %}
-        <a href="{{ url_for('register') }}" class="btn btn-outline" style="padding:16px 28px">Save My History</a>
+        <a href="{{ url_for('register') }}" class="btn btn-ghost">Save my results</a>
         {% endif %}
     </div>
 </div>
 
-<div class="fact-banner">
-    <p>💡 Health fact</p>
-    <blockquote>{{ fact }}</blockquote>
+<div class="fact-bar">
+    <span>Health fact</span>
+    <p>{{ fact }}</p>
 </div>
 
 <div class="features">
-    <div class="features-header">
-        <div class="section-title">Everything you need,<br>in one tool</div>
-        <p class="section-sub" style="max-width:480px;margin:12px auto 0">No ads, no upsells — just accurate, personalised calculations.</p>
-    </div>
-    <div class="features-grid">
-        <div class="feature-card">
-            <div class="feature-icon">🎯</div>
+    <div class="features-title">Everything in one place</div>
+    <div class="feat-grid">
+        <div class="feat-card">
+            <div class="feat-icon">🎯</div>
             <h3>Calorie Calculator</h3>
-            <p>Mifflin-St Jeor BMR formula with activity multipliers gives you a precise daily target based on your body and goal.</p>
+            <p>Precise daily calorie target using Mifflin-St Jeor with your activity level and goal timeline.</p>
         </div>
-        <div class="feature-card">
-            <div class="feature-icon">🥗</div>
-            <h3>Meal Plan Suggestions</h3>
-            <p>Get a full day of meal ideas — breakfast, lunch, dinner, and snack — tailored to your goal (weight loss or muscle gain).</p>
+        <div class="feat-card">
+            <div class="feat-icon">🥗</div>
+            <h3>Meal Plan Ideas</h3>
+            <p>Full day of meal suggestions — breakfast through snack — tailored to weight loss or muscle building.</p>
         </div>
-        <div class="feature-card">
-            <div class="feature-icon">🏋️</div>
-            <h3>Exercise Burn Calculator</h3>
-            <p>Choose any activity, enter your weight and duration, and see exactly how many calories you've burned.</p>
+        <div class="feat-card">
+            <div class="feat-icon">🏋️</div>
+            <h3>Exercise Burn</h3>
+            <p>Pick from 15 activities and instantly see how many calories you've burned by duration and weight.</p>
         </div>
-        <div class="feature-card">
-            <div class="feature-icon">📊</div>
-            <h3>BMI & Body Fat Estimate</h3>
-            <p>Instant BMI with category, plus an estimated body fat percentage using the Deurenberg formula.</p>
+        <div class="feat-card">
+            <div class="feat-icon">💪</div>
+            <h3>Body Fat Estimator</h3>
+            <p>Enter your bench, squat, pull-up, curl, and crunch numbers to estimate body fat percentage.</p>
         </div>
-        <div class="feature-card">
-            <div class="feature-icon">💪</div>
-            <h3>Macro Split Customiser</h3>
-            <p>See your protein, carb, and fat targets — with visual bars and the ability to adjust for your preferred split.</p>
+        <div class="feat-card">
+            <div class="feat-icon">📊</div>
+            <h3>BMI & Body Stats</h3>
+            <p>BMI with category, estimated body fat, and daily water intake based on your profile.</p>
         </div>
-        <div class="feature-card">
-            <div class="feature-icon">💧</div>
-            <h3>Water Intake Guide</h3>
-            <p>Get a daily hydration target based on your weight and activity level. Staying hydrated is half the battle.</p>
-        </div>
-        <div class="feature-card">
-            <div class="feature-icon">📱</div>
+        <div class="feat-card">
+            <div class="feat-icon">⚖️</div>
             <h3>kg / lbs · cm / ft</h3>
-            <p>Toggle between metric and imperial units instantly. The calculator handles all conversions behind the scenes.</p>
+            <p>Toggle between metric and imperial instantly on every calculator.</p>
         </div>
-        <div class="feature-card">
-            <div class="feature-icon">🕘</div>
+        <div class="feat-card">
+            <div class="feat-icon">🕘</div>
             <h3>History & Dashboard</h3>
-            <p>Create a free account to save every calculation. Track how your targets change as you progress over time.</p>
+            <p>Create a free account to save every calculation and watch your targets evolve over time.</p>
         </div>
-        <div class="feature-card">
-            <div class="feature-icon">🖨️</div>
-            <h3>Print / Share Results</h3>
-            <p>Print or download your results as a clean one-pager to share with a coach, GP, or training partner.</p>
+        <div class="feat-card">
+            <div class="feat-icon">🖨️</div>
+            <h3>Print Your Results</h3>
+            <p>Print or save as PDF to share with a coach, GP, or training partner.</p>
         </div>
     </div>
 </div>
 
 {% if user and history %}
 <div class="history-section">
-    <div class="section-title">Your recent calculations</div>
-    <div class="history-grid">
+    <div style="font-family:'Fraunces',serif;font-size:1.3rem;font-weight:700">Your recent calculations</div>
+    <div class="hist-grid">
         {% for h in history %}
-        <div class="history-card">
-            <div class="history-cal">{{ h.calorie_intake }}</div>
-            <div class="history-meta">
+        <div class="hist-card">
+            <div class="hist-num">{{ h.calorie_intake }}</div>
+            <div class="hist-meta">
                 kcal/day target<br>
-                {{ h.weight_kg | round(1) }} kg · {{ h.weeks_goal }}w goal<br>
-                <span style="opacity:0.6">{{ h.created_at[:10] }}</span>
+                {{ h.weight_kg | round(1) }}kg · {{ h.weeks_goal }} week goal<br>
+                <span style="color:var(--dim)">{{ h.created_at[:10] }}</span>
             </div>
         </div>
         {% endfor %}
     </div>
-    <a href="{{ url_for('dashboard') }}" style="display:inline-block;margin-top:20px;color:var(--accent);text-decoration:none;font-size:0.88rem;font-weight:600">View full history →</a>
+    <a href="{{ url_for('dashboard') }}" style="display:inline-block;margin-top:16px;color:var(--mid);text-decoration:none;font-size:0.88rem;font-weight:600">View full history →</a>
 </div>
-{% elif not user %}
-<div class="history-section" style="text-align:center">
-    <div class="card" style="max-width:500px;margin:0 auto;padding:40px">
-        <div style="font-size:2.5rem;margin-bottom:16px">📈</div>
-        <div class="section-title" style="font-size:1.5rem">Track your progress</div>
-        <p class="section-sub" style="margin:10px 0 24px">Create a free account to save your calculations and watch your targets evolve as you progress.</p>
-        <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">Create Free Account</a>
-    </div>
+{% else %}
+<div class="cta-section">
+    <h2>Track your progress</h2>
+    <p>Create a free account to save your calculations and watch your targets change as you make progress.</p>
+    <a href="{{ url_for('register') }}" class="btn btn-primary" style="padding:13px 32px;font-size:1rem">Create free account →</a>
 </div>
 {% endif %}
+
 {% endblock %}

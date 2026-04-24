@@ -2,53 +2,49 @@
 {% block title %}Log In — Weight a Minute{% endblock %}
 {% block head %}
 <style>
-.auth-wrap {
-    min-height: calc(100vh - var(--nav-h) - 160px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 60px clamp(16px,4vw,32px);
-    background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(37,99,235,0.15), transparent);
+.auth-page {
+    min-height: calc(100vh - var(--nav) - 120px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px 16px;
 }
-.auth-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    padding: 44px 40px;
-    width: 100%;
-    max-width: 420px;
+.auth-box {
+    width: 100%; max-width: 400px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 36px 32px;
 }
-.auth-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 1.8rem;
-    font-weight: 800;
-    margin-bottom: 6px;
-}
-.auth-sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 32px; }
-.auth-footer { margin-top: 20px; text-align: center; color: var(--muted); font-size: 0.85rem; }
-.auth-footer a { color: var(--accent); text-decoration: none; font-weight: 600; }
+@media(max-width:480px) { .auth-box { padding: 24px 18px; border-radius: 12px; } }
+.auth-title { font-family: 'Fraunces', serif; font-size: 1.8rem; font-weight: 700; margin-bottom: 4px; }
+.auth-sub { color: var(--soft); font-size: 0.9rem; margin-bottom: 28px; }
+.field-label-plain { font-size: 0.83rem; font-weight: 600; color: var(--soft); display: block; margin-bottom: 6px; }
+.auth-footer { text-align: center; color: var(--dim); font-size: 0.85rem; margin-top: 18px; }
+.auth-footer a { color: var(--mid); text-decoration: none; font-weight: 600; }
 </style>
 {% endblock %}
 {% block content %}
-<div class="auth-wrap">
-    <div class="auth-card">
+<div class="auth-page">
+    <div class="auth-box">
         <div class="auth-title">Welcome back</div>
-        <div class="auth-sub">Log in to view your history and saved calculations.</div>
+        <div class="auth-sub">Log in to see your calculation history.</div>
 
-        <form method="POST" action="{{ url_for('login') }}">
+        <form method="POST" action="{{ url_for('login') }}" novalidate>
             <div class="field">
-                <label>Email</label>
-                <input type="email" name="email" required placeholder="you@example.com" autofocus/>
+                <label class="field-label-plain" for="email">Email address</label>
+                <input type="email" id="email" name="email" required
+                    placeholder="you@example.com"
+                    autocomplete="email" inputmode="email" autofocus/>
             </div>
             <div class="field">
-                <label>Password</label>
-                <input type="password" name="password" required placeholder="••••••••"/>
+                <label class="field-label-plain" for="password">Password</label>
+                <input type="password" id="password" name="password" required
+                    placeholder="••••••••" autocomplete="current-password"/>
             </div>
-            <button type="submit" class="btn btn-primary btn-lg" style="margin-top:8px">Log In →</button>
+            <button type="submit" class="btn btn-primary btn-full" style="margin-top:6px">
+                Log in →
+            </button>
         </form>
 
         <div class="auth-footer">
-            Don't have an account? <a href="{{ url_for('register') }}">Sign up free</a>
+            No account? <a href="{{ url_for('register') }}">Sign up free</a>
         </div>
     </div>
 </div>

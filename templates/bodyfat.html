@@ -1,0 +1,448 @@
+{% extends 'base.html' %}
+{% block title %}Body Fat Estimator — Weight a Minute{% endblock %}
+{% block head %}
+<style>
+.page-hero { padding: 36px 16px 28px; border-bottom: 1px solid var(--border); }
+.page-wrap { max-width: 860px; margin: 0 auto; padding: 36px 16px 72px; }
+
+.lift-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media(max-width: 520px) { .lift-grid { grid-template-columns: 1fr; } }
+
+.lift-card {
+    background: var(--card2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px;
+}
+.lift-icon { font-size: 1.4rem; margin-bottom: 6px; }
+.lift-name { font-size: 0.78rem; font-weight: 700; color: var(--soft); letter-spacing: 0.5px; margin-bottom: 10px; text-transform: uppercase; }
+
+.mini-toggle { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+.mini-toggle input[type=radio] { position: absolute; opacity: 0; pointer-events: none; }
+.mini-toggle label {
+    padding: 5px 13px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 6px; font-size: 0.8rem; font-weight: 500; cursor: pointer;
+    color: var(--soft); transition: all 0.15s;
+}
+.mini-toggle input[type=radio]:checked + label {
+    background: rgba(29,78,216,0.2); border-color: var(--mid); color: var(--blue-l);
+}
+
+.field-label { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; font-weight: 600; color: var(--soft); margin-bottom: 7px; }
+.field-val { font-size: 0.95rem; color: var(--text); font-weight: 600; }
+
+/* Unit toggle global */
+.unit-row { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; flex-wrap: wrap; }
+.unit-toggle { display: flex; background: var(--card2); border: 1px solid var(--border); border-radius: 999px; padding: 3px; }
+.unit-toggle button {
+    padding: 7px 18px; border: none; border-radius: 999px;
+    font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; background: transparent; color: var(--soft);
+}
+.unit-toggle button.on { background: var(--blue); color: #fff; }
+
+/* Weighted crunch extra */
+.weighted-extra { display: none; margin-top: 10px; }
+.weighted-extra.show { display: block; }
+
+/* Result */
+.result-box {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 28px 20px; text-align: center; margin-bottom: 18px;
+}
+.bf-num {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(4rem, 12vw, 7rem);
+    font-weight: 700; line-height: 1; margin-bottom: 4px;
+}
+.bf-cat {
+    display: inline-block; padding: 5px 18px; border-radius: 999px;
+    font-size: 0.85rem; font-weight: 700; margin-top: 10px; letter-spacing: 0.5px;
+}
+.comp-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 18px; }
+@media(max-width: 420px) { .comp-grid { grid-template-columns: 1fr 1fr; } }
+.comp-cell {
+    background: var(--card2); border: 1px solid var(--border);
+    border-radius: 9px; padding: 12px; text-align: center;
+}
+.comp-n { font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 700; color: var(--blue-l); }
+.comp-l { font-size: 0.68rem; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; margin-top: 3px; }
+
+.str-bar-wrap { margin-top: 18px; }
+.str-bar-label { display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--soft); margin-bottom: 6px; }
+.str-bar-track { height: 8px; background: var(--card2); border-radius: 99px; overflow: hidden; }
+.str-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--blue), #06b6d4); }
+.range-labels { display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--dim); margin-top: 4px; }
+
+.info-box {
+    background: rgba(29,78,216,0.08); border: 1px solid rgba(59,130,246,0.2);
+    border-radius: 10px; padding: 14px 16px;
+    font-size: 0.84rem; color: var(--soft); line-height: 1.6; margin-top: 14px;
+}
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-hero">
+    <div class="wrap">
+        <div class="page-title">Body Fat Estimator</div>
+        <p class="page-sub">Enter your key lift maxes and we'll estimate your body fat using your strength-to-bodyweight ratios.</p>
+    </div>
+</div>
+
+<div class="page-wrap">
+
+{% if result %}
+<!-- ── RESULT ── -->
+<div class="result-box">
+    <div class="bf-num" style="color:{{ result.cat_col }}">{{ result.bf }}</div>
+    <div style="color:var(--soft);font-size:1rem">% body fat</div>
+    <div class="bf-cat" style="background:{{ result.cat_col }}22;color:{{ result.cat_col }};border:1px solid {{ result.cat_col }}44">
+        {{ result.cat }}
+    </div>
+    <div class="comp-grid">
+        <div class="comp-cell">
+            <div class="comp-n">{{ result.fat_mass_disp }}</div>
+            <div class="comp-l">Fat mass</div>
+        </div>
+        <div class="comp-cell">
+            <div class="comp-n">{{ result.lean_mass_disp }}</div>
+            <div class="comp-l">Lean mass</div>
+        </div>
+        <div class="comp-cell">
+            <div class="comp-n">{{ result.strength_score }}%</div>
+            <div class="comp-l">Strength score</div>
+        </div>
+    </div>
+    <div class="str-bar-wrap">
+        <div class="str-bar-label">
+            <span>Composite Strength Score</span>
+            <span>{{ result.strength_score }} / 100</span>
+        </div>
+        <div class="str-bar-track">
+            <div class="str-bar-fill" style="width:{{ result.strength_score }}%"></div>
+        </div>
+        <div class="range-labels">
+            <span>Beginner</span><span>Intermediate</span><span>Advanced</span><span>Elite</span>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom:16px">
+    <div class="card-label">Body Fat Ranges — {{ result.gender | title }}</div>
+    {% if result.gender == 'male' %}
+    {% set ranges = [('Athletic','< 10%','#06b6d4'),('Fit','10–17%','#10b981'),('Average','18–24%','#d97706'),('High','25%+','#dc2626')] %}
+    {% else %}
+    {% set ranges = [('Athletic','< 18%','#06b6d4'),('Fit','18–24%','#10b981'),('Average','25–31%','#d97706'),('High','32%+','#dc2626')] %}
+    {% endif %}
+    {% for label, range, col in ranges %}
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--card2);border-radius:8px;border-left:3px solid {{ col }};margin-bottom:8px">
+        <span style="font-weight:600;font-size:0.9rem">{{ label }}</span>
+        <span style="color:{{ col }};font-weight:700;font-size:0.9rem">{{ range }}</span>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="info-box">
+    ℹ️ This is an estimate based on strength-to-bodyweight ratios. DEXA scans are the gold standard for accuracy. Strength athletes may read lower than actual due to high muscle mass.
+</div>
+
+<div style="margin-top:22px;display:flex;gap:10px;flex-wrap:wrap">
+    <a href="{{ url_for('bodyfat') }}" class="btn btn-ghost">← Recalculate</a>
+    <a href="{{ url_for('calculate') }}" class="btn btn-primary">Get Calorie Plan →</a>
+</div>
+
+{% else %}
+<!-- ── FORM ── -->
+<form method="POST" action="{{ url_for('bodyfat') }}" id="bfForm">
+<input type="hidden" name="unit_system" id="bf_unit_sys" value="metric"/>
+
+<!-- Unit toggle -->
+<div class="unit-row">
+    <span style="font-size:0.83rem;color:var(--soft);font-weight:600">Units:</span>
+    <div class="unit-toggle">
+        <button type="button" id="btn-m" class="on" onclick="setUnit('metric')">kg</button>
+        <button type="button" id="btn-i"        onclick="setUnit('imperial')">lbs</button>
+    </div>
+</div>
+
+<!-- Profile -->
+<div class="card" style="margin-bottom:14px">
+    <div class="card-label">Your Details</div>
+    <div class="g2">
+        <div class="field">
+            <div class="field-label">Gender</div>
+            <div class="pill-row" style="margin-top:4px">
+                <input type="radio" name="gender" id="gm" value="male" checked/>
+                <label for="gm">Male</label>
+                <input type="radio" name="gender" id="gf" value="female"/>
+                <label for="gf">Female</label>
+            </div>
+        </div>
+        <div class="field">
+            <div class="field-label">Age</div>
+            <input type="number" name="age" min="16" max="80" value="25" required/>
+        </div>
+    </div>
+    <div class="field" style="margin-bottom:0">
+        <div class="field-label">
+            Bodyweight
+            <span class="field-val" id="bw-disp">80 kg</span>
+        </div>
+        <input type="range" name="weight_kg" id="bw-kg" min="40" max="180" step="0.5" value="80"
+            oninput="syncBw()"/>
+        <!-- hidden lbs mirror -->
+        <input type="range" name="weight_lbs" id="bw-lbs" min="88" max="400" step="1" value="176"
+            style="display:none" oninput="syncBwLbs()"/>
+    </div>
+</div>
+
+<!-- Lifts -->
+<div class="card" style="margin-bottom:14px">
+    <div class="card-label">Lift Maxes (1 rep max or best effort)</div>
+    <div class="lift-grid">
+
+        <!-- Bench -->
+        <div class="lift-card">
+            <div class="lift-icon">🏋️</div>
+            <div class="lift-name">Bench Press</div>
+            <div class="field" style="margin:0">
+                <div class="field-label">Weight <span class="field-val" id="bench-disp">80 kg</span></div>
+                <input type="range" name="bench_kg" id="bench-kg" min="10" max="250" step="2.5" value="80"
+                    oninput="syncLift('bench')"/>
+                <input type="range" name="bench_lbs" id="bench-lbs" min="22" max="550" step="5" value="176"
+                    style="display:none" oninput="syncLiftLbs('bench')"/>
+            </div>
+        </div>
+
+        <!-- Squat OR Leg Press -->
+        <div class="lift-card">
+            <div class="lift-icon">🦵</div>
+            <div class="lift-name">Lower Body</div>
+            <div class="mini-toggle">
+                <input type="radio" name="lower_type" id="lt-sq" value="squat" checked onchange="updateLowerLabel()"/>
+                <label for="lt-sq">Squat</label>
+                <input type="radio" name="lower_type" id="lt-lp" value="legpress" onchange="updateLowerLabel()"/>
+                <label for="lt-lp">Leg Press</label>
+            </div>
+            <div class="field" style="margin:0">
+                <div class="field-label">Weight <span class="field-val" id="lower-disp">100 kg</span></div>
+                <input type="range" name="lower_kg" id="lower-kg" min="10" max="400" step="2.5" value="100"
+                    oninput="syncLift('lower')"/>
+                <input type="range" name="lower_lbs" id="lower-lbs" min="22" max="880" step="5" value="220"
+                    style="display:none" oninput="syncLiftLbs('lower')"/>
+            </div>
+        </div>
+
+        <!-- Pull-up / Lat Pulldown -->
+        <div class="lift-card">
+            <div class="lift-icon">🔼</div>
+            <div class="lift-name">Pull-up / Lat Pulldown</div>
+            <div class="mini-toggle">
+                <input type="radio" name="pull_type" id="pt-pu" value="pullup" checked onchange="updatePullLabel()"/>
+                <label for="pt-pu">Pull-ups</label>
+                <input type="radio" name="pull_type" id="pt-lp" value="latpull" onchange="updatePullLabel()"/>
+                <label for="pt-lp">Lat Pulldown</label>
+            </div>
+            <div class="field" style="margin:0">
+                <div class="field-label">
+                    <span id="pull-unit-lbl">Reps (bodyweight)</span>
+                    <span class="field-val" id="pull-disp">10</span>
+                </div>
+                <input type="range" name="pull_val" id="pull-kg" min="1" max="50" step="1" value="10"
+                    oninput="syncPull()"/>
+                <input type="range" name="pull_lbs" id="pull-lbs" min="1" max="200" step="2.5" value="66"
+                    style="display:none" oninput="syncPullLbs()"/>
+            </div>
+        </div>
+
+        <!-- Bicep Curl -->
+        <div class="lift-card">
+            <div class="lift-icon">💪</div>
+            <div class="lift-name">Bicep Curl (each hand)</div>
+            <div class="field" style="margin:0">
+                <div class="field-label">Weight <span class="field-val" id="curl-disp">20 kg</span></div>
+                <input type="range" name="curl_kg" id="curl-kg" min="2" max="80" step="1" value="20"
+                    oninput="syncLift('curl')"/>
+                <input type="range" name="curl_lbs" id="curl-lbs" min="4" max="176" step="2.5" value="44"
+                    style="display:none" oninput="syncLiftLbs('curl')"/>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Crunches — full width -->
+    <div style="margin-top:14px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
+        <div class="lift-icon">🔥</div>
+        <div class="lift-name">Ab Crunches</div>
+
+        <!-- Weighted toggle -->
+        <div class="mini-toggle" style="margin-bottom:12px">
+            <input type="radio" name="crunch_weighted" id="cw-no" value="no" checked onchange="toggleWeighted()"/>
+            <label for="cw-no">Bodyweight</label>
+            <input type="radio" name="crunch_weighted" id="cw-yes" value="yes" onchange="toggleWeighted()"/>
+            <label for="cw-yes">Weighted</label>
+        </div>
+
+        <div class="field">
+            <div class="field-label">Max Reps <span class="field-val" id="crunch-disp">30 reps</span></div>
+            <input type="range" name="crunch_reps" id="crunch-slider" min="0" max="100" step="1" value="30"
+                oninput="document.getElementById('crunch-disp').textContent=this.value+' reps'"/>
+        </div>
+
+        <!-- Weighted extra -->
+        <div class="weighted-extra" id="weighted-extra">
+            <div class="field" style="margin-bottom:0">
+                <div class="field-label">
+                    Crunch Weight
+                    <span class="field-val" id="cw-disp">10 kg</span>
+                </div>
+                <input type="range" name="crunch_weight_kg" id="cw-kg" min="1" max="60" step="1" value="10"
+                    oninput="syncCrunchW()"/>
+                <input type="range" name="crunch_weight_lbs" id="cw-lbs" min="2" max="132" step="2.5" value="22"
+                    style="display:none" oninput="syncCrunchWLbs()"/>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="info-box" style="margin-bottom:20px">
+    💡 Use your <strong>1-rep max</strong> or heaviest set of 2–3 reps. For pull-ups, enter max bodyweight reps. For leg press, use the total plate weight. Weighted crunches: enter the weight you hold on your chest.
+</div>
+
+<button type="submit" class="btn btn-primary btn-full">Estimate My Body Fat →</button>
+</form>
+{% endif %}
+
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let isImperial = false;
+
+// ── Unit toggle ──────────────────────────────────────────────────────────────
+function setUnit(u) {
+    isImperial = u === 'imperial';
+    document.getElementById('bf_unit_sys').value = u;
+    document.getElementById('btn-m').classList.toggle('on', !isImperial);
+    document.getElementById('btn-i').classList.toggle('on',  isImperial);
+
+    // Bodyweight
+    document.getElementById('bw-kg').style.display   = isImperial ? 'none' : 'block';
+    document.getElementById('bw-lbs').style.display  = isImperial ? 'block' : 'none';
+
+    // Bench, lower, curl sliders
+    ['bench','lower','curl'].forEach(id => {
+        document.getElementById(id+'-kg').style.display  = isImperial ? 'none' : 'block';
+        document.getElementById(id+'-lbs').style.display = isImperial ? 'block' : 'none';
+    });
+
+    // Pull
+    updatePullLabel();
+
+    // Crunch weight
+    document.getElementById('cw-kg').style.display   = isImperial ? 'none' : 'block';
+    document.getElementById('cw-lbs').style.display  = isImperial ? 'block' : 'none';
+
+    // Re-sync displays
+    syncBw(); syncBwLbs();
+    syncLift('bench'); syncLift('lower'); syncLift('curl');
+    syncPull(); syncCrunchW(); syncCrunchWLbs();
+}
+
+// ── Bodyweight ──────────────────────────────────────────────────────────────
+function syncBw() {
+    const v = document.getElementById('bw-kg').value;
+    document.getElementById('bw-disp').textContent = v + ' kg';
+    // keep lbs slider roughly in sync
+    document.getElementById('bw-lbs').value = Math.round(v * 2.205);
+}
+function syncBwLbs() {
+    const v = document.getElementById('bw-lbs').value;
+    document.getElementById('bw-disp').textContent = v + ' lbs';
+    document.getElementById('bw-kg').value = (v / 2.205).toFixed(1);
+}
+
+// ── Standard lifts (kg/lbs) ─────────────────────────────────────────────────
+function syncLift(id) {
+    const v = document.getElementById(id+'-kg').value;
+    const unit = isImperial ? 'lbs' : 'kg';
+    document.getElementById(id+'-disp').textContent = v + ' ' + (isImperial ? 'kg' : 'kg');
+    document.getElementById(id+'-disp').textContent = v + ' kg';
+    document.getElementById(id+'-lbs').value = Math.round(v * 2.205);
+}
+function syncLiftLbs(id) {
+    const v = document.getElementById(id+'-lbs').value;
+    document.getElementById(id+'-disp').textContent = v + ' lbs';
+    document.getElementById(id+'-kg').value = (v / 2.205).toFixed(1);
+}
+
+// ── Pull-up / Lat pulldown ───────────────────────────────────────────────────
+function updatePullLabel() {
+    const isPullup = document.getElementById('pt-pu').checked;
+    document.getElementById('pull-unit-lbl').textContent = isPullup ? 'Reps (bodyweight)' : 'Weight';
+    if (isPullup) {
+        document.getElementById('pull-kg').max  = 50;
+        document.getElementById('pull-lbs').max = 50;
+        document.getElementById('pull-kg').style.display  = 'block';
+        document.getElementById('pull-lbs').style.display = 'none';
+    } else {
+        document.getElementById('pull-kg').max  = 200;
+        document.getElementById('pull-lbs').max = 440;
+        document.getElementById('pull-kg').style.display  = isImperial ? 'none' : 'block';
+        document.getElementById('pull-lbs').style.display = isImperial ? 'block' : 'none';
+    }
+    syncPull();
+}
+function syncPull() {
+    const isPullup = document.getElementById('pt-pu').checked;
+    const v = document.getElementById('pull-kg').value;
+    document.getElementById('pull-disp').textContent = isPullup ? v + ' reps' : v + ' kg';
+    document.getElementById('pull-lbs').value = Math.round(v * 2.205);
+}
+function syncPullLbs() {
+    const v = document.getElementById('pull-lbs').value;
+    const isPullup = document.getElementById('pt-pu').checked;
+    document.getElementById('pull-disp').textContent = isPullup ? v + ' reps' : v + ' lbs';
+    document.getElementById('pull-kg').value = (v / 2.205).toFixed(1);
+}
+
+// ── Lower body label ────────────────────────────────────────────────────────
+function updateLowerLabel() {
+    // Label is handled by lift-name, just sync display
+    syncLift('lower');
+}
+
+// ── Weighted crunches ────────────────────────────────────────────────────────
+function toggleWeighted() {
+    const weighted = document.getElementById('cw-yes').checked;
+    document.getElementById('weighted-extra').classList.toggle('show', weighted);
+}
+function syncCrunchW() {
+    const v = document.getElementById('cw-kg').value;
+    document.getElementById('cw-disp').textContent = v + ' kg';
+    document.getElementById('cw-lbs').value = Math.round(v * 2.205);
+}
+function syncCrunchWLbs() {
+    const v = document.getElementById('cw-lbs').value;
+    document.getElementById('cw-disp').textContent = v + ' lbs';
+    document.getElementById('cw-kg').value = (v / 2.205).toFixed(1);
+}
+
+// Disable inactive unit inputs on submit so they don't interfere
+document.getElementById('bfForm') && document.getElementById('bfForm').addEventListener('submit', () => {
+    if (isImperial) {
+        document.getElementById('bw-kg').disabled    = true;
+        document.getElementById('bench-kg').disabled = true;
+        document.getElementById('lower-kg').disabled = true;
+        document.getElementById('pull-kg').disabled  = true;
+        document.getElementById('curl-kg').disabled  = true;
+        document.getElementById('cw-kg').disabled    = true;
+    } else {
+        document.getElementById('bw-lbs').disabled    = true;
+        document.getElementById('bench-lbs').disabled = true;
+        document.getElementById('lower-lbs').disabled = true;
+        document.getElementById('pull-lbs').disabled  = true;
+        document.getElementById('curl-lbs').disabled  = true;
+        document.getElementById('cw-lbs').disabled    = true;
+    }
+});
+</script>
+{% endblock %}

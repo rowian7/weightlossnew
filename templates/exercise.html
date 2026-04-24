@@ -1,102 +1,158 @@
 {% extends 'base.html' %}
-{% block title %}Exercise Calorie Burn — Weight a Minute{% endblock %}
+{% block title %}Exercise Burn — Weight a Minute{% endblock %}
 {% block head %}
 <style>
-.page-hero {
-    background: radial-gradient(ellipse 60% 40% at 70% 0%, rgba(16,185,129,0.15), transparent);
-    padding: 50px clamp(16px,4vw,48px) 40px;
-    border-bottom: 1px solid var(--border);
-}
-.ex-wrap {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 48px clamp(16px,4vw,32px) 80px;
-}
-.ex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 32px; }
-.ex-btn {
-    background: var(--surface);
-    border: 2px solid var(--border);
-    border-radius: 12px;
-    padding: 16px;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: left;
-    color: var(--text);
-    font-family: 'Epilogue', sans-serif;
-}
-.ex-btn:hover { border-color: var(--blue-l); background: rgba(59,130,246,0.08); }
-.ex-btn.selected { border-color: var(--green); background: rgba(16,185,129,0.1); }
-.ex-icon { font-size: 1.6rem; margin-bottom: 8px; }
-.ex-name { font-size: 0.88rem; font-weight: 600; }
-.ex-met { font-size: 0.75rem; color: var(--muted); margin-top: 3px; }
+.page-hero { padding: 36px 16px 28px; border-bottom: 1px solid var(--border); }
+.page-wrap { max-width: 860px; margin: 0 auto; padding: 32px 16px 72px; }
 
-.calc-panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 28px;
-    margin-top: 28px;
+.ex-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-    align-items: start;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+    margin-bottom: 28px;
 }
-@media(max-width:600px) { .calc-panel { grid-template-columns: 1fr; } }
+@media(max-width: 420px) { .ex-grid { grid-template-columns: 1fr 1fr; } }
 
-.result-panel {
-    background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(6,182,212,0.06));
-    border: 1px solid rgba(16,185,129,0.2);
-    border-radius: 12px;
-    padding: 24px;
-    text-align: center;
+.ex-btn {
+    background: var(--card); border: 2px solid var(--border);
+    border-radius: 10px; padding: 14px 8px; cursor: pointer;
+    text-align: center; color: var(--text);
+    font-family: 'Space Grotesk', sans-serif; transition: all 0.15s; width: 100%;
+}
+.ex-btn:hover  { border-color: var(--mid); background: var(--card2); }
+.ex-btn.picked { border-color: var(--green); background: rgba(5,150,105,0.1); }
+.ex-icon { font-size: 1.6rem; margin-bottom: 5px; }
+.ex-name { font-size: 0.78rem; font-weight: 600; line-height: 1.3; }
+
+.calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+@media(max-width: 560px) { .calc-grid { grid-template-columns: 1fr; } }
+
+.result-box {
+    background: rgba(5,150,105,0.08); border: 1px solid rgba(5,150,105,0.25);
+    border-radius: 12px; padding: 28px 20px; text-align: center;
 }
 .burn-num {
-    font-family: 'Syne', sans-serif;
-    font-size: 4rem;
-    font-weight: 800;
-    color: var(--green);
-    line-height: 1;
-    margin-bottom: 4px;
+    font-family: 'Fraunces', serif;
+    font-size: clamp(3.5rem, 12vw, 5.5rem);
+    font-weight: 700; color: var(--green); line-height: 1; margin-bottom: 4px;
 }
-.burn-label { color: var(--muted); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 2px; }
-.burn-detail { margin-top: 16px; font-size: 0.88rem; color: var(--muted); line-height: 1.6; }
+.burn-label { color: var(--soft); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 1.5px; }
+.burn-detail { margin-top: 14px; font-size: 0.85rem; color: var(--soft); line-height: 1.7; }
 
-.tip-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.87rem; color: var(--muted); }
-.tip-row:last-child { border: none; }
-.tip-row::before { content: '→'; color: var(--green); flex-shrink: 0; }
+.field-label { display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; font-weight: 600; color: var(--soft); margin-bottom: 7px; }
+.field-val { font-size: 0.95rem; color: var(--text); font-weight: 600; }
+
+.tip-item { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.84rem; color: var(--soft); line-height: 1.5; }
+.tip-item:last-child { border: none; }
+.tip-item::before { content: '→'; color: var(--green); flex-shrink: 0; }
+
+/* Extra options panel for treadmill/stairmaster */
+.extra-opts {
+    display: none;
+    background: var(--card2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px; margin-top: 14px;
+}
+.extra-opts.show { display: block; }
+.extra-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--mid); margin-bottom: 12px; }
 </style>
 {% endblock %}
 {% block content %}
+
 <div class="page-hero">
-    <div class="container">
-        <div class="section-title">Exercise Calorie Burn</div>
-        <p class="section-sub">Pick an activity, enter your weight and duration, get your burn estimate instantly.</p>
+    <div class="wrap">
+        <div class="page-title">Exercise Burn</div>
+        <p class="page-sub">Pick an activity, set your weight and duration — get your calorie burn instantly.</p>
     </div>
 </div>
 
-<div class="ex-wrap">
-    <div class="card-title" style="margin-bottom:16px">Select an Exercise</div>
-    <div class="ex-grid" id="exGrid">
-        {% for ex in exercises %}
-        <button class="ex-btn" data-met="{{ ex.met }}" data-name="{{ ex.name }}" onclick="selectEx(this)">
-            <div class="ex-icon">{{ ex.icon }}</div>
-            <div class="ex-name">{{ ex.name }}</div>
-            <div class="ex-met">MET {{ ex.met }}</div>
+<div class="page-wrap">
+
+    <div style="font-size:0.72rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mid);margin-bottom:14px">Choose an Activity</div>
+
+    <div class="ex-grid">
+        <button class="ex-btn" type="button" data-id="treadmill" onclick="pickEx(this)">
+            <div class="ex-icon">🏃</div>
+            <div class="ex-name">Treadmill</div>
         </button>
-        {% endfor %}
+        <button class="ex-btn" type="button" data-id="stairmaster" onclick="pickEx(this)">
+            <div class="ex-icon">🪜</div>
+            <div class="ex-name">Stair Master</div>
+        </button>
+        <button class="ex-btn" type="button" data-id="running" data-met="9.8" onclick="pickEx(this)">
+            <div class="ex-icon">🏃</div>
+            <div class="ex-name">Running</div>
+        </button>
+        <button class="ex-btn" type="button" data-id="walking" data-met="3.8" onclick="pickEx(this)">
+            <div class="ex-icon">🚶</div>
+            <div class="ex-name">Walking Football</div>
+        </button>
+        <button class="ex-btn" type="button" data-id="padel" data-met="6.5" onclick="pickEx(this)">
+            <div class="ex-icon">🏓</div>
+            <div class="ex-name">Padel</div>
+        </button>
+        <button class="ex-btn" type="button" data-id="gym" data-met="5.0" onclick="pickEx(this)">
+            <div class="ex-icon">🏋️</div>
+            <div class="ex-name">Gym / Weights</div>
+        </button>
+        <button class="ex-btn" type="button" data-id="rowing" data-met="7.0" onclick="pickEx(this)">
+            <div class="ex-icon">🚣</div>
+            <div class="ex-name">Rowing Machine</div>
+        </button>
+        <button class="ex-btn" type="button" data-id="swimming" data-met="8.0" onclick="pickEx(this)">
+            <div class="ex-icon">🏊</div>
+            <div class="ex-name">Swimming</div>
+        </button>
+        <button class="ex-btn" type="button" data-id="cycling" data-met="7.5" onclick="pickEx(this)">
+            <div class="ex-icon">🚴</div>
+            <div class="ex-name">Cycling</div>
+        </button>
     </div>
 
-    <div class="calc-panel">
-        <div>
-            <div class="field">
-                <label>Your Weight <span class="val" id="w-disp">70 kg</span></label>
-                <input type="range" id="ex-weight" min="30" max="200" step="0.5" value="70" oninput="syncW();calcBurn()"/>
+    <!-- Treadmill options -->
+    <div class="extra-opts" id="treadmill-opts">
+        <div class="extra-label">Treadmill Settings</div>
+        <div class="field">
+            <div class="field-label">Speed <span class="field-val" id="tm-speed-v">8 km/h</span></div>
+            <input type="range" id="tm-speed" min="3" max="20" step="0.5" value="8"
+                oninput="document.getElementById('tm-speed-v').textContent=this.value+' km/h'; calcBurn()"/>
+            <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--dim);margin-top:4px">
+                <span>Walk 3</span><span>Jog 8</span><span>Run 12</span><span>Sprint 20</span>
             </div>
-            <div class="field" style="margin-top:8px">
-                <label>
-                    <span>Unit</span>
-                </label>
-                <div class="pill-group">
+        </div>
+        <div class="field" style="margin-bottom:0">
+            <div class="field-label">Incline <span class="field-val" id="tm-incline-v">0%</span></div>
+            <input type="range" id="tm-incline" min="0" max="15" step="0.5" value="0"
+                oninput="document.getElementById('tm-incline-v').textContent=this.value+'%'; calcBurn()"/>
+            <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--dim);margin-top:4px">
+                <span>Flat</span><span>Moderate 5%</span><span>Steep 15%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stairmaster options -->
+    <div class="extra-opts" id="stairmaster-opts">
+        <div class="extra-label">Stair Master Settings</div>
+        <div class="field" style="margin-bottom:0">
+            <div class="field-label">Speed / Level <span class="field-val" id="sm-speed-v">Level 5 — Moderate</span></div>
+            <input type="range" id="sm-speed" min="1" max="20" step="1" value="5"
+                oninput="updateSmLabel(); calcBurn()"/>
+            <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--dim);margin-top:4px">
+                <span>Easy (1)</span><span>Moderate (5–10)</span><span>Hard (20)</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="calc-grid" style="margin-top:20px">
+        <!-- Controls -->
+        <div class="card">
+            <div class="field">
+                <div class="field-label">Your weight <span class="field-val" id="w-disp">70 kg</span></div>
+                <input type="range" id="ex-weight" min="30" max="200" step="0.5" value="70"
+                    oninput="syncW(); calcBurn()"/>
+            </div>
+            <div class="field" style="margin-top:4px">
+                <div class="field-label">Unit</div>
+                <div class="pill-row" style="margin-top:4px">
                     <input type="radio" name="exunit" id="eu-kg" value="kg" checked onchange="calcBurn()"/>
                     <label for="eu-kg">kg</label>
                     <input type="radio" name="exunit" id="eu-lbs" value="lbs" onchange="calcBurn()"/>
@@ -104,70 +160,124 @@
                 </div>
             </div>
             <div class="field">
-                <label>Duration <span class="val" id="dur-disp">30 min</span></label>
-                <input type="range" id="ex-dur" min="5" max="180" step="5" value="30" oninput="document.getElementById('dur-disp').textContent=this.value+' min';calcBurn()"/>
+                <div class="field-label">Duration <span class="field-val" id="dur-disp">30 min</span></div>
+                <input type="range" id="ex-dur" min="5" max="180" step="5" value="30"
+                    oninput="document.getElementById('dur-disp').textContent=this.value+' min'; calcBurn()"/>
             </div>
-            <div class="field">
-                <label>Selected Exercise</label>
-                <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:0.9rem;font-weight:600" id="ex-name-disp">— Choose from the grid above —</div>
+            <div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:0.88rem;font-weight:600;color:var(--soft)" id="ex-name-disp">
+                ← Pick an exercise above
             </div>
         </div>
 
+        <!-- Result -->
         <div>
-            <div class="result-panel">
+            <div class="result-box" style="margin-bottom:16px">
                 <div class="burn-num" id="burnNum">—</div>
                 <div class="burn-label">calories burned</div>
-                <div class="burn-detail" id="burnDetail">Select an exercise and adjust the sliders</div>
+                <div class="burn-detail" id="burnDetail">Select an exercise to get started</div>
             </div>
-
-            <div style="margin-top:20px">
-                <div class="card-title" style="color:var(--green)">Exercise Tips</div>
-                <div class="tip-row">Warm up for 5 minutes at low intensity before pushing hard.</div>
-                <div class="tip-row">Compound lifts (squat, deadlift) burn more than isolated exercises.</div>
-                <div class="tip-row">Heart rate should sit at 60–80% of max for fat burning.</div>
-                <div class="tip-row">Consistency over intensity — 4× moderate beats 1× intense.</div>
+            <div class="card">
+                <div class="card-label" style="color:var(--green)">Tips</div>
+                <div class="tip-item">Incline walking burns nearly as many calories as running — easier on joints.</div>
+                <div class="tip-item">Stair master at level 8–10 for 20 min burns around 200–300 kcal.</div>
+                <div class="tip-item">Keep heart rate at 60–80% of max for fat burning.</div>
+                <div class="tip-item">Consistency matters more than intensity — show up regularly.</div>
             </div>
         </div>
     </div>
 </div>
+
 {% endblock %}
 {% block scripts %}
 <script>
-let selectedMet = null;
-let selectedName = '';
+let selId = null, selName = '', baseMet = null;
 
-function selectEx(btn) {
-    document.querySelectorAll('.ex-btn').forEach(b => b.classList.remove('selected'));
-    btn.classList.add('selected');
-    selectedMet = parseFloat(btn.dataset.met);
-    selectedName = btn.dataset.name;
-    document.getElementById('ex-name-disp').textContent = selectedName;
+// MET lookup for standard exercises
+const METS = {
+    running: 9.8, walking: 3.5, padel: 6.5,
+    gym: 5.0, rowing: 7.0, swimming: 8.0, cycling: 7.5
+};
+
+// Treadmill MET: base from speed + incline bonus
+function treadmillMet() {
+    const spd = parseFloat(document.getElementById('tm-speed').value);
+    const inc = parseFloat(document.getElementById('tm-incline').value);
+    // Base MET from speed (approx): walk ~3.5 at 5kmh, run ~10 at 12kmh
+    let met = 0.1 * spd + 1.8 * (inc / 100) * spd + 3.5;
+    // Clamp sensibly
+    return Math.max(2.5, Math.min(16, met));
+}
+
+// Stairmaster MET: level 1=5, level 20=12
+function stairmasterMet() {
+    const lvl = parseFloat(document.getElementById('sm-speed').value);
+    return 5 + (lvl / 20) * 7;
+}
+
+function updateSmLabel() {
+    const lvl = document.getElementById('sm-speed').value;
+    const labels = {1:'Easy',2:'Easy',3:'Easy',4:'Light',5:'Moderate',6:'Moderate',7:'Moderate',8:'Challenging',9:'Challenging',10:'Hard',11:'Hard',12:'Hard',13:'Very Hard',14:'Very Hard',15:'Very Hard',16:'Intense',17:'Intense',18:'Intense',19:'Max',20:'Max'};
+    document.getElementById('sm-speed-v').textContent = `Level ${lvl} — ${labels[lvl] || 'Moderate'}`;
+}
+
+function pickEx(btn) {
+    document.querySelectorAll('.ex-btn').forEach(b => b.classList.remove('picked'));
+    btn.classList.add('picked');
+    selId   = btn.dataset.id;
+    selName = btn.querySelector('.ex-name').textContent;
+    baseMet = btn.dataset.met ? parseFloat(btn.dataset.met) : null;
+
+    // Show/hide extra options
+    document.getElementById('treadmill-opts').classList.toggle('show', selId === 'treadmill');
+    document.getElementById('stairmaster-opts').classList.toggle('show', selId === 'stairmaster');
+
+    document.getElementById('ex-name-disp').textContent = selName;
+    document.getElementById('ex-name-disp').style.color = 'var(--text)';
     calcBurn();
 }
 
 function syncW() {
     const v = document.getElementById('ex-weight').value;
-    const unit = document.querySelector('input[name=exunit]:checked').value;
-    document.getElementById('w-disp').textContent = v + ' ' + unit;
+    const u = document.querySelector('[name=exunit]:checked').value;
+    document.getElementById('w-disp').textContent = v + ' ' + u;
 }
 
 function calcBurn() {
-    if (!selectedMet) return;
-    const rawW = parseFloat(document.getElementById('ex-weight').value);
-    const unit = document.querySelector('input[name=exunit]:checked').value;
-    const weightKg = unit === 'lbs' ? rawW * 0.453592 : rawW;
-    const minutes = parseFloat(document.getElementById('ex-dur').value);
-    const calories = Math.round((selectedMet * 3.5 * weightKg / 200) * minutes);
-    document.getElementById('burnNum').textContent = calories;
-    const hrs = Math.floor(minutes/60);
-    const mins = minutes % 60;
-    const durStr = hrs > 0 ? `${hrs}h ${mins}m` : `${minutes} min`;
+    if (!selId) return;
+    const raw  = parseFloat(document.getElementById('ex-weight').value);
+    const unit = document.querySelector('[name=exunit]:checked').value;
+    const wkg  = unit === 'lbs' ? raw * 0.453592 : raw;
+    const mins = parseFloat(document.getElementById('ex-dur').value);
+
+    let met;
+    if (selId === 'treadmill')   met = treadmillMet();
+    else if (selId === 'stairmaster') met = stairmasterMet();
+    else met = baseMet || METS[selId] || 5.0;
+
+    const cal = Math.round((met * 3.5 * wkg / 200) * mins);
+    const hrs = Math.floor(mins / 60);
+    const rem = mins % 60;
+    const durStr = hrs > 0 ? `${hrs}h ${rem}m` : `${mins} min`;
+
+    let extraInfo = '';
+    if (selId === 'treadmill') {
+        const spd = document.getElementById('tm-speed').value;
+        const inc = document.getElementById('tm-incline').value;
+        extraInfo = `${spd} km/h · ${inc}% incline<br>`;
+    } else if (selId === 'stairmaster') {
+        extraInfo = `Level ${document.getElementById('sm-speed').value}<br>`;
+    }
+
+    document.getElementById('burnNum').textContent = cal;
     document.getElementById('burnDetail').innerHTML =
-        `<strong style="color:var(--text)">${selectedName}</strong> for ${durStr}<br>` +
-        `at ${rawW} ${unit} body weight<br><br>` +
-        `<span style="color:var(--accent)">~${Math.round(calories/minutes*60)} kcal/hour</span>`;
+        `<strong style="color:var(--text)">${selName}</strong><br>` +
+        extraInfo +
+        `${durStr} · ${raw} ${unit}<br><br>` +
+        `<span style="color:#6ee7b7">≈ ${Math.round(cal / mins * 60)} kcal / hour</span>`;
 }
 
-document.querySelectorAll('input[name=exunit]').forEach(r => r.addEventListener('change', () => { syncW(); calcBurn(); }));
+document.querySelectorAll('[name=exunit]').forEach(r =>
+    r.addEventListener('change', () => { syncW(); calcBurn(); })
+);
 </script>
 {% endblock %}

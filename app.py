@@ -5,8 +5,8 @@ from functools import wraps
 import math
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)
-app.config['SITE_OWNER'] = 'rowian'  # ← Change this to your name!
+app.secret_key = os.environ.get('SECRET_KEY', 'wam-dev-key-change-in-prod-2024')
+app.config['SITE_OWNER'] = 'Your Name'  # ← Change this to your name!
 
 DB = os.path.join(os.path.dirname(__file__), 'instance', 'wam.db')
 
@@ -381,6 +381,113 @@ def exercise_burn():
     calories = round((met * 3.5 * weight_kg / 200) * minutes)
     return jsonify({'calories': calories})
 
+
+@app.route("/bodyfat", methods=["GET", "POST"])
+def bodyfat():
+    user = current_user()
+    result = None
+    if request.method == "POST":
+        try:
+            gender       = request.form["gender"]
+            age          = int(request.form["age"])
+            unit_system  = request.form.get("unit_system", "metric")
+
+            # Weight
+            if unit_system == "imperial":
+                weight_kg = float(request.form["weight_lbs"]) * 0.453592
+            else:
+                weight_kg = float(request.form["weight_kg"])
+
+            # Bench
+            if unit_system == "imperial":
+                bench_kg = float(request.form["bench_lbs"]) * 0.453592
+            else:
+                bench_kg = float(request.form["bench_kg"])
+
+            # Lower body (squat or leg press)
+            lower_type = request.form.get("lower_type", "squat")
+            if unit_system == "imperial":
+                lower_kg = float(request.form["lower_lbs"]) * 0.453592
+            else:
+                lower_kg = float(request.form["lower_kg"])
+            # Leg press is typically easier — normalise down by 40%
+            lower_kg_norm = lower_kg if lower_type == "squat" else lower_kg * 0.60
+
+            # Pull
+            pull_type = request.form.get("pull_type", "pullup")
+            if pull_type == "pullup":
+                pull_val = float(request.form["pull_val"])  # reps
+            else:
+                if unit_system == "imperial":
+                    pull_val = float(request.form["pull_lbs"]) * 0.453592
+                else:
+                    pull_val = float(request.form["pull_val"])
+
+            # Curl
+            if unit_system == "imperial":
+                curl_kg = float(request.form["curl_lbs"]) * 0.453592
+            else:
+                curl_kg = float(request.form["curl_kg"])
+
+            # Crunches
+            crunch_reps     = int(request.form["crunch_reps"])
+            crunch_weighted = request.form.get("crunch_weighted", "no") == "yes"
+            if crunch_weighted:
+                if unit_system == "imperial":
+                    crunch_weight_kg = float(request.form.get("crunch_weight_lbs", 0)) * 0.453592
+                else:
+                    crunch_weight_kg = float(request.form.get("crunch_weight_kg", 0))
+                # Weighted crunches: add bonus reps equivalent
+                effective_reps = crunch_reps + (crunch_weight_kg * 0.5)
+            else:
+                effective_reps = crunch_reps
+
+            # Ratios
+            bench_ratio = bench_kg / weight_kg
+            lower_ratio = lower_kg_norm / weight_kg
+            pull_ratio  = (pull_val / weight_kg) if pull_type == "pullup" else ((pull_val * 0.75) / weight_kg)
+            curl_ratio  = curl_kg / weight_kg
+            endurance   = min(effective_reps, 80) / 80.0
+
+            if gender == "male":
+                s  = (min(bench_ratio/1.5,1.0)*0.28 + min(lower_ratio/2.0,1.0)*0.28
+                    + min(pull_ratio/1.0, 1.0)*0.24 + min(curl_ratio/0.5, 1.0)*0.10
+                    + endurance*0.10)
+                bf = round(30 - s*24, 1)
+                bf = max(6.0, min(30.0, bf))
+            else:
+                s  = (min(bench_ratio/0.8,1.0)*0.23 + min(lower_ratio/1.5,1.0)*0.28
+                    + min(pull_ratio/0.6, 1.0)*0.24 + min(curl_ratio/0.35,1.0)*0.10
+                    + endurance*0.15)
+                bf = round(38 - s*24, 1)
+                bf = max(14.0, min(38.0, bf))
+
+            if gender == "male":
+                cat,col = ("Athletic","#06b6d4") if bf<10 else ("Fit","#10b981") if bf<18 else ("Average","#f59e0b") if bf<25 else ("High","#ef4444")
+            else:
+                cat,col = ("Athletic","#06b6d4") if bf<18 else ("Fit","#10b981") if bf<25 else ("Average","#f59e0b") if bf<32 else ("High","#ef4444")
+
+            fat_mass  = round(weight_kg * bf / 100, 1)
+            lean_mass = round(weight_kg - fat_mass, 1)
+
+            # Display values
+            if unit_system == "imperial":
+                fat_mass_disp  = str(round(fat_mass * 2.205, 1)) + " lbs"
+                lean_mass_disp = str(round(lean_mass * 2.205, 1)) + " lbs"
+            else:
+                fat_mass_disp  = str(fat_mass) + " kg"
+                lean_mass_disp = str(lean_mass) + " kg"
+
+            result = dict(
+                bf=bf, cat=cat, cat_col=col,
+                fat_mass=fat_mass, lean_mass=lean_mass,
+                fat_mass_disp=fat_mass_disp, lean_mass_disp=lean_mass_disp,
+                weight_kg=weight_kg, gender=gender, age=age,
+                strength_score=round(s*100)
+            )
+        except Exception as e:
+            flash("Please fill in all fields correctly.", "error")
+    return render_template("bodyfat.html", user=user, result=result)
 if __name__ == '__main__':
     init_db()
     app.run(port=5002, debug=True)
